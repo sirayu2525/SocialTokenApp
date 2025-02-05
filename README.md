@@ -41,8 +41,10 @@ touch deploy.js
 ```
 ローカルノードのテスト
 ```bash
-
-
+npm install @openzeppelin/contracts
+npx hardhat node # ローカルのブロックチェーンネットワークを立ち上げる
+# 別のターミナルに移動
+npx hardhat run scripts/local_deploy.js --network localhost
 ```
 
 
