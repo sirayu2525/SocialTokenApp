@@ -24,6 +24,7 @@ npm install ethers
 
 ### バックエンド
 
+Hardhatの初期化時には「Create a basic sample project」を選択
 ```bash
 mkdir backend
 cd backend
@@ -31,6 +32,18 @@ npm init -y
 npm install --save-dev hardhat
 npx hardhat init
 ```
-Hardhatの初期化時には「Create a basic sample project」を選択
+
+各種ファイル生成
+```bash
+touch contracts/SocialToken.sol
+mkdir scripts
+touch deploy.js
+```
+ローカルノードのテスト
+```bash
+
+
+```
+
 
 
