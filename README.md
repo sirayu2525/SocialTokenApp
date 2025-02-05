@@ -16,7 +16,8 @@ npm -v   # インストール確認
 Reactアプリケーションの作成
 ```bash
 npx create-react-app frontend 
-npm install react@18 react-dom@18 #依存関係の解消でReact18にダウングレード
+npm install react@18 react-dom@18 #依存関係の解消のためReact18にダウングレード
 cd frontend
+# 必要があれば　npm install web-vitals
 npm install ethers
 ```
