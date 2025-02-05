@@ -21,3 +21,16 @@ cd frontend
 # 必要があれば　npm install web-vitals
 npm install ethers
 ```
+
+### バックエンド
+
+```bash
+mkdir backend
+cd backend
+npm init -y
+npm install --save-dev hardhat
+npx hardhat init
+```
+Hardhatの初期化時には「Create a basic sample project」を選択
+
+
