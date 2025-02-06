@@ -37,16 +37,26 @@ npx hardhat init
 ```bash
 touch contracts/SocialToken.sol
 mkdir scripts
-touch deploy.js
+touch scripts/local_deploy.js
 ```
 
-ローカルノードデプロイ
+ローカルノードデプロイ（旧）
 ```bash
 npm install @openzeppelin/contracts
 npx hardhat node # ローカルのブロックチェーンネットワークを立ち上げる
 # 別のターミナルに移動
 npx hardhat run scripts/local_deploy.js --network localhost # ローカルノードにデプロイ
 ```
+ローカルノードデプロイ（新）
+```bash
+npm install @openzeppelin/contracts
+npx hardhat node 
+touch ignitoin/modules/SocialTokenModule.js
+npx hardhat ignition deploy ignition/modules/SocialTokenModule.js --network localhost
+```
+
+
+
 ローカルノードのテスト
 
 方法１(Hatdhatのコンソールから)
