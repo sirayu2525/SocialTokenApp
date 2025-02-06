@@ -1,5 +1,14 @@
 # SocialTokenApp
 
+## 全体の流れ
+１．ユーザーがMetaMaskでウォレット接続
+２．dAppがMetaMaskを通じてブロックチェーンにアクセス
+３．MetaMaskがトランザクションに署名
+４．Infura（RPCノード）経由でトランザクションをブロックチェーンに送信
+５．ブロックチェーンネットワークがトランザクションを検証・記録
+６．ノードがブロックをネットワーク全体に同期
+７．dAppが最新のブロックチェーンデータを取得し、UIに表示
+
 ## 環境構築
 
 前提：WSLのUbuntu
@@ -51,13 +60,11 @@ npx hardhat run scripts/local_deploy.js --network localhost # ローカルノー
 ```bash
 npm install @openzeppelin/contracts
 npx hardhat node 
-touch ignitoin/modules/SocialTokenModule.js
+touch ignitoin/modules/SocialTokenModule.js # モジュール
 npx hardhat ignition deploy ignition/modules/SocialTokenModule.js --network localhost
 ```
 
-
-
-ローカルノードのテスト
+#### ローカルノードのテスト
 
 方法１(Hatdhatのコンソールから)
 ```bash
@@ -85,5 +92,11 @@ npx hardhat run scripts/interact.js --network localhost
 touch test/SocialToken.js
 npx hardhat test
 ```
+
+#### テストネット
+
+前提：MetaMaskのログイン、InfuraでのAPIキー取得
+
+MetaMaskでSepolia（ETHのテストネット）に接続
 
 
