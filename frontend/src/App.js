@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import "./App.css";
 
-const CONTRACT_ADDRESS = "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"; // デプロイされたコントラクトのアドレス
+const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // デプロイされたコントラクトのアドレス
+console.log("Using contract address:", CONTRACT_ADDRESS);
+
 const ABI = [
   {
     "inputs": [
@@ -338,50 +340,62 @@ const ABI = [
 function App() {
   const [account, setAccount] = useState(null);
   const [balance, setBalance] = useState(null);
-  const [provider, setProvider] = useState(null);
-  const [contract, setContract] = useState(null);
 
   useEffect(() => {
     async function loadBlockchainData() {
-      if (window.ethereum) {
-        try {
-          // MetaMask の接続をリクエスト
-          await window.ethereum.request({ method: "eth_requestAccounts" });
+      console.log("🔍 Checking if MetaMask is installed...");
+      if (!window.ethereum) {
+        alert("❌ MetaMask is not installed!");
+        return;
+      }
 
-          // ブロックチェーンのプロバイダとサインナーを取得
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const signer = await provider.getSigner();
-          const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+      try {
+        console.log("🔗 Connecting to MetaMask...");
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
 
-          setProvider(provider);
-          setContract(contract);
-
-          // ウォレットアドレスの取得
-          const accounts = await provider.listAccounts();
-          setAccount(accounts.length > 0 ? accounts[0].address : "Not connected");
-
-          // トークン残高を取得
-          if (accounts.length > 0) {
-            const balance = await contract.balanceOf(account);
-            const formattedBalance = ethers.formatUnits(balance.toString(), 18); // `.toString()` を追加
-            setBalance(formattedBalance);
-            console.log("Token Balance:", formattedBalance);            
-          }
-        } catch (error) {
-          console.error("Error loading blockchain data:", error);
+        const accounts = await provider.listAccounts();
+        if (accounts.length === 0) {
+          console.warn("⚠ No accounts found in MetaMask");
+          return;
         }
-      } else {
-        alert("MetaMask is not installed!");
+
+        const userAddress = accounts[0].address;
+        console.log("✅ Connected Account:", userAddress);
+        setAccount(userAddress);
+
+        console.log("📝 Checking contract address...");
+        if (!CONTRACT_ADDRESS || CONTRACT_ADDRESS === "0x") {
+          console.error("❌ Invalid contract address:", CONTRACT_ADDRESS);
+          return;
+        }
+
+        console.log("📡 Connecting to contract...");
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+        console.log("✅ Contract instance created:", contract);
+        console.log("🔍 Contract Address:", contract.target);
+
+
+        console.log("💰 Fetching token balance...");
+        const balance = await contract.balanceOf(userAddress);
+        console.log("🔢 Raw Balance:", balance.toString());
+
+        const formattedBalance = ethers.formatUnits(balance, 18);
+        console.log("💰 Formatted Balance:", formattedBalance);
+        setBalance(formattedBalance);
+      } catch (error) {
+        console.error("❌ Error loading blockchain data:", error);
       }
     }
+
     loadBlockchainData();
-  }, []);
+  }, []); // 初回のみ実行
 
   return (
     <div className="App">
-      <h1>Social Token App</h1>
+      <h1>Social Token Debug</h1>
       <p>Wallet Address: {account || "Not connected"}</p>
-      <p>Token Balance: {balance ?? "Loading..."} STK</p>
+      <p>Token Balance: {balance !== null ? balance : "Loading..."} STK</p>
     </div>
   );
 }
