@@ -1,12 +1,14 @@
 require("@nomicfoundation/hardhat-toolbox");
-require("@nomicfoundation/hardhat-ignition");
 require("dotenv").config();
 
 module.exports = {
-  solidity: "0.8.20",
+  solidity: "0.8.28",
   networks: {
+    localhost: {
+      url: "http://127.0.0.1:8545"
+    },
     sepolia: {
-      url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      url: process.env.SEPOLIA_RPC_URL,
       accounts: [process.env.PRIVATE_KEY]
     }
   }
