@@ -6,12 +6,13 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 text = '''以下のソースコードを基準とします。
-a = 0
-b = 0
-def plus(a,b):
-    return a+b
+def process_data(data):
+    return [item for item in data if item >= 10]
 
-このソースコードの開発にかかるコストを1.00Cと定義します。
+data = [5, 15, 8, 20, 3, 12]
+print("Filtered Data:", process_data(data))
+
+このソースコードの開発にかかるコストを1.000Cと定義します。
 
 では、以下のコードの開発には何Cかかるか算出してください。
 
