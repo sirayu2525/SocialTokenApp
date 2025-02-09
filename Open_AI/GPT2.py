@@ -4,6 +4,7 @@ import os
 # OpenAIのAPIキーを設定
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+script = ''
 
 text = '''以下のソースコードを基準とします。
 def process_data(data):
@@ -16,9 +17,7 @@ print("Filtered Data:", process_data(data))
 
 では、以下のコードの開発には何Cかかるか算出してください。
 
-a = 1+5
-b = 6+7
-print(a+b)
+'''+script+'''
 
 なお、返すテキストはかかるコスト(小数点第2位まで記載)です
 また、コストの理由も100字以内で説明しなさい
