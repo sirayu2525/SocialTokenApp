@@ -516,6 +516,21 @@ def wait_for_mint(tx_hash, timeout=100):
 # ✅ FastAPI のエンドポイント
 app = FastAPI()
 
+@app.get("/wallet_balance/{wallet_id}")
+def wallet_balance(wallet_id: str):
+    """
+    🔹 指定したウォレットのトークン残高を取得する API
+    """
+    if not wallet_id or len(wallet_id) != 42:
+        raise HTTPException(status_code=400, detail="Invalid wallet address")
+
+    try:
+        balance_wei = contract.functions.balanceOf(wallet_id).call()
+        balance = web3.from_wei(balance_wei, "ether")
+        return {"status": "Success", "wallet_id": wallet_id, "wallet_balance": balance}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # 🔹 リクエストボディのデータモデル
 class MintRequest(BaseModel):
@@ -523,30 +538,42 @@ class MintRequest(BaseModel):
     token: float
 
 @app.post("/mint_tokens")
-def mint(request: MintRequest, api_key: str = Header(None)):
-    print(f"Received API Key: {api_key}")  # デバッグ用
+def mint_tokens_api(request: MintRequest, api_key: str = Header(None)):
+    """
+    🔹 ウォレットにトークンを発行する API
+    """
     if api_key != ADMIN_API_KEY:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
+    if not request.wallet_id or len(request.wallet_id) != 42:
+        raise HTTPException(status_code=400, detail="Invalid wallet address")
+
     amount_wei = web3.to_wei(request.token, "ether")
+
+    # ✅ 発行前のトークン残高を取得
+    initial_balance_wei = contract.functions.balanceOf(request.wallet_id).call()
+
     tx_hash = mint_tokens(request.wallet_id, amount_wei)
 
     if not tx_hash:
-        raise HTTPException(status_code=500, detail="Token minting failed")
+        raise HTTPException(status_code=500, detail="Token minting failed. Transaction hash is None.")
 
-    # ✅ `mint()` が完了するのを待機（最大 100 秒）
     success = wait_for_mint(tx_hash, timeout=100)
 
     # ✅ 承認された場合のみ `new_balance` を取得
     if success:
-        new_balance = contract.functions.balanceOf(request.wallet_id).call()
+        new_balance_wei = contract.functions.balanceOf(request.wallet_id).call()
     else:
-        new_balance = web3.from_wei(amount_wei, "ether")  # ✅ 仮の残高
+        new_balance_wei = initial_balance_wei  # ✅ 失敗した場合は元の残高を返す
+
+    # ✅ 実際に追加されたトークン量を計算
+    minted_amount = new_balance_wei - initial_balance_wei
 
     return {
         "status": "Success",
         "tx_hash": tx_hash,
-        "new_balance": web3.from_wei(new_balance, "ether")  # ✅ 残高を `MOP` 単位で表示
+        "minted_amount": web3.from_wei(minted_amount, "ether"),  # ✅ 追加されたトークン量
+        "new_balance": web3.from_wei(new_balance_wei, "ether")   # ✅ 現在のトークン残高
     }
 
 # ✅ テスト用
