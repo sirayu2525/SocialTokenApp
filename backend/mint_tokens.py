@@ -11,6 +11,11 @@ INFURA_URL = os.getenv("INFURA_URL")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS")
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY")
+print("INFURA_URL:", INFURA_URL)
+print("PRIVATE_KEY:", PRIVATE_KEY)
+print("CONTRACT_ADDRESS:", CONTRACT_ADDRESS)
+print("ADMIN_API_KEY:", ADMIN_API_KEY)
+
 
 web3 = Web3(Web3.HTTPProvider(INFURA_URL))
 
@@ -495,7 +500,7 @@ def check_transaction_status_infura(tx_hash):
         return "unknown"  # ✅ 何らかのエラーが発生
 
 
-def wait_for_mint(tx_hash, timeout=10):
+def wait_for_mint(tx_hash, timeout=100):
     """ `mint()` のトランザクションがブロックに承認されるのを待機 """
     print("⏳ トークン発行がブロックに承認されるのを待機中...")
     for _ in range(timeout):
@@ -519,6 +524,7 @@ class MintRequest(BaseModel):
 
 @app.post("/mint_tokens")
 def mint(request: MintRequest, api_key: str = Header(None)):
+    print(f"Received API Key: {api_key}")  # デバッグ用
     if api_key != ADMIN_API_KEY:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
