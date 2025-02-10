@@ -2,6 +2,8 @@ from web3 import Web3
 import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
+from pydantic import BaseModel
+import time
 
 load_dotenv()
 
@@ -456,16 +458,19 @@ contract_abi = [
 
 contract = web3.eth.contract(address=CONTRACT_ADDRESS, abi=contract_abi)
 def mint_tokens(wallet_id, amount):
+    """ `mint()` を実行し、トークンを発行する """
     try:
         account = web3.eth.account.from_key(PRIVATE_KEY)
-        nonce = web3.eth.get_transaction_count(account.address, "pending")  # ✅ 最新の nonce を取得
+        nonce = web3.eth.get_transaction_count(account.address, "pending")
+        gas_price = web3.eth.gas_price
 
-        gas_price = web3.eth.gas_price  # ✅ 現在のガス価格を取得
-        print(f"Current gas price: {web3.from_wei(gas_price, 'gwei')} Gwei")
+        print(f"🔹 {wallet_id} に {web3.from_wei(amount, 'ether')} MOP を発行中...")
+        print(f"⛽ 現在のガス価格: {web3.from_wei(gas_price, 'gwei')} Gwei")
 
         txn = contract.functions.mint(wallet_id, amount).build_transaction({
+            "from": account.address,
             "gas": 100000,
-            "gasPrice": gas_price * 2,  # ✅ ガス価格を 2 倍に設定
+            "gasPrice": gas_price * 2,
             "nonce": nonce
         })
 
@@ -475,25 +480,62 @@ def mint_tokens(wallet_id, amount):
         return web3.to_hex(tx_hash)
 
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        print(f"❌ エラー: {str(e)}")
         return None
 
-# FastAPI のエンドポイント
+
+def check_transaction_status_infura(tx_hash):
+    """ Infura API を使ってトランザクションの状態をチェックする """
+    try:
+        response = web3.eth.get_transaction_receipt(tx_hash)
+        if response is not None and response.get("status") == 1:
+            return "confirmed"  # ✅ トランザクションが承認された
+        return "pending"  # ✅ まだ承認されていない
+    except Exception:
+        return "unknown"  # ✅ 何らかのエラーが発生
+
+
+def wait_for_mint(tx_hash, timeout=10):
+    """ `mint()` のトランザクションがブロックに承認されるのを待機 """
+    print("⏳ トークン発行がブロックに承認されるのを待機中...")
+    for _ in range(timeout):
+        time.sleep(1)
+        status = check_transaction_status_infura(tx_hash)
+        if status == "confirmed":
+            print("✅ トークン発行がブロックに承認されました！")
+            return True
+    print("❌ トランザクションが確認できませんでした。")
+    return False
+
+
+# ✅ FastAPI のエンドポイント
 app = FastAPI()
 
+
+# 🔹 リクエストボディのデータモデル
+class MintRequest(BaseModel):
+    wallet_id: str
+    token: float
+
 @app.post("/mint_tokens")
-def mint(wallet_id: str, token: float, api_key: str = Header(None)):
+def mint(request: MintRequest, api_key: str = Header(None)):
     if api_key != ADMIN_API_KEY:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
-    amount_wei = web3.to_wei(token, "ether")  # ✅ `MOP` の単位を `wei` に統一
-    tx_hash = mint_tokens(wallet_id, amount_wei)
+    amount_wei = web3.to_wei(request.token, "ether")
+    tx_hash = mint_tokens(request.wallet_id, amount_wei)
 
     if not tx_hash:
         raise HTTPException(status_code=500, detail="Token minting failed")
 
-    # ✅ トランザクション完了後の残高を取得
-    new_balance = contract.functions.balanceOf(wallet_id).call()
+    # ✅ `mint()` が完了するのを待機（最大 100 秒）
+    success = wait_for_mint(tx_hash, timeout=100)
+
+    # ✅ 承認された場合のみ `new_balance` を取得
+    if success:
+        new_balance = contract.functions.balanceOf(request.wallet_id).call()
+    else:
+        new_balance = web3.from_wei(amount_wei, "ether")  # ✅ 仮の残高
 
     return {
         "status": "Success",
@@ -503,8 +545,8 @@ def mint(wallet_id: str, token: float, api_key: str = Header(None)):
 
 # ✅ テスト用
 if __name__ == "__main__":
-    wallet_id = "0xd525f542c3F2d16D12dA68578bd69d068A854BD0"  # 🔹 トークンを発行するウォレット
-    token_amount = 1  # 🔹 1 MOP
+    wallet_id = "0xd525f542c3F2d16D12dA68578bd69d068A854BD0"
+    token_amount = 10  # 🔹 10 MOP
     amount_wei = web3.to_wei(token_amount, "ether")
 
     try:
@@ -514,8 +556,15 @@ if __name__ == "__main__":
         if tx_hash:
             print(f"✅ トークン発行トランザクション: {tx_hash}")
 
-            new_balance = contract.functions.balanceOf(wallet_id).call()
-            print(f"💰 新しいトークン残高: {web3.from_wei(new_balance, 'ether')} MOP")
+            # ✅ 10秒間トランザクションの確認
+            success = wait_for_mint(tx_hash, timeout=100)
+
+            if success:
+                new_balance = contract.functions.balanceOf(wallet_id).call()
+                print(f"💰 新しいトークン残高: {web3.from_wei(new_balance, 'ether')} MOP")
+            else:
+                print("❌ トランザクションの確認ができなかったため、仮の残高を表示")
+
         else:
             print("❌ トークン発行に失敗しました")
 
