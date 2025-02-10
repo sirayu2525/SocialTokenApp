@@ -2,7 +2,7 @@ require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
 // ネットワークを選択（"localhost" または "sepolia"）
-const network = "localhost"; // ここを "sepolia" に変えれば Sepolia 用の設定になる
+const network = "sepolia"; // ここを "sepolia" に変えれば Sepolia 用の設定になる
 
 // ネットワーク設定
 const networksConfig = {

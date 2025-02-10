@@ -1,24 +1,37 @@
+// 未検証
 const { expect } = require("chai");
+const { ethers } = require("hardhat");
 
-describe("SocialToken Contract", function () {
-  it("Should deploy with correct initial supply", async function () {
-    const [owner] = await ethers.getSigners();
+describe("SocialToken", function () {
+  let owner, addr1, socialToken;
+
+  beforeEach(async function () {
+    [owner, addr1] = await ethers.getSigners();
+
     const SocialToken = await ethers.getContractFactory("SocialToken");
-    const socialToken = await SocialToken.deploy("SocialToken", "STK", ethers.parseUnits("1000000", 18));
+    socialToken = await SocialToken.deploy("SocialToken", "MOP", ethers.parseUnits("1000000", 18));
     await socialToken.waitForDeployment();
-
-    const ownerBalance = await socialToken.balanceOf(owner.address);
-    expect(await socialToken.totalSupply()).to.equal(ownerBalance);
   });
 
-  it("Should transfer tokens correctly", async function () {
-    const [owner, addr1] = await ethers.getSigners();
-    const SocialToken = await ethers.getContractFactory("SocialToken");
-    const socialToken = await SocialToken.deploy("SocialToken", "STK", ethers.parseUnits("1000000", 18));
-    await socialToken.waitForDeployment();
+  it("should mint tokens only by owner", async function () {
+    await socialToken.mint(addr1.address, ethers.parseUnits("500", 18));
+    expect(await socialToken.balanceOf(addr1.address)).to.equal(ethers.parseUnits("500", 18));
+  });
 
-    await socialToken.transfer(addr1.address, ethers.parseUnits("100", 18));
-    const addr1Balance = await socialToken.balanceOf(addr1.address);
-    expect(addr1Balance).to.equal(ethers.parseUnits("100", 18));
+  it("should not allow non-owner to mint", async function () {
+    await expect(
+      socialToken.connect(addr1).mint(addr1.address, ethers.parseUnits("500", 18))
+    ).to.be.revertedWith("Ownable: caller is not the owner");
+  });
+
+  it("should allow owner to transfer tokens", async function () {
+    await socialToken.transferTokens(addr1.address, ethers.parseUnits("200", 18));
+    expect(await socialToken.balanceOf(addr1.address)).to.equal(ethers.parseUnits("200", 18));
+  });
+
+  it("should not allow non-owner to use transferTokens", async function () {
+    await expect(
+      socialToken.connect(addr1).transferTokens(owner.address, ethers.parseUnits("100", 18))
+    ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 });
