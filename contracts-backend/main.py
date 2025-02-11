@@ -1,11 +1,11 @@
 from web3 import Web3
 import os
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 import time
 
-load_dotenv()
+#load_dotenv()
 
 INFURA_URL = os.getenv("INFURA_URL")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")

@@ -6,6 +6,12 @@ import openai
 import os
 import requests
 import json
+import Contract_Operation as CO
+import web3
+
+import time
+import hashlib
+
 
 # OpenAIのAPIキーを設定
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -32,7 +38,7 @@ def fetch_github_code(url):
         return {'result':False,
                 'code':'Some_Error'}
 
-def evaluate_code(github_raw_url):
+def evaluate_code(github_raw_url,issue_description):
     # 例: GitHubのraw URLを指定
     #github_raw_url = "https://raw.githubusercontent.com/sirayu2525/SocialTokenApp/refs/heads/evaluation_code/Open_AI/GPT1.py"
     fetch_result = fetch_github_code(github_raw_url)
@@ -53,8 +59,16 @@ def evaluate_code(github_raw_url):
 
             '''+source_code+'''
 
-            なお、返すテキストはかかるコスト(小数点第2位まで記載)です
-            また、コストの理由も100字以内で説明しなさい'''
+            また、開発してほしいプログラムの概要は以下のようになっています。
+            この概要に合致しているかどうかもチェックして合致率(パーセンテージ)で教えてください
+            '''+issue_description+'''
+
+            cost:かかるコスト(小数点第2位まで記載して単位は省略)
+            reason:コストの理由(100字以内)
+            match_percent:合致率(0～100の整数で答えて、単位はつけないでください)
+            としたうえで、以下のようなjson形式で答えてください。
+            {'cost':cost,'reason':reason,'match_percent':match_percent}
+            '''
 
         if fetch_result['script_type'] == 'py':
             text = '''以下のソースコードを基準とします。
@@ -70,8 +84,15 @@ def evaluate_code(github_raw_url):
 
             '''+source_code+'''
 
-            なお、返すテキストはかかるコスト(小数点第2位まで記載)です
-            また、コストの理由も100字以内で説明しなさい
+            また、開発してほしいプログラムの概要は以下のようになっています。
+            この概要に合致しているかどうかもチェックして合致率(パーセンテージ)で教えてください
+            '''+issue_description+'''
+
+            cost:かかるコスト(小数点第2位まで記載して単位は省略)
+            reason:コストの理由(100字以内)
+            match_percent:合致率(0～100の整数で答えて、単位はつけないでください)
+            としたうえで、以下のようなjson形式で答えてください。
+            {'cost':cost,'reason':reason,'match_percent':match_percent}
             '''
         # GPT-3.5-Turboモデルに送信するメッセージ形式を修正
         response = openai.ChatCompletion.create(
@@ -85,11 +106,34 @@ def evaluate_code(github_raw_url):
         # GPTの返答を取得
         gpt_reply = response['choices'][0]['message']['content']
         print("ChatGPT:", gpt_reply)
-        return gpt_reply
+
+        gpt_reply = gpt_reply.replace("'''", "")
+        gpt_reply = gpt_reply.replace("```", "")
+        gpt_reply = gpt_reply.replace("json", "")
+        gpt_reply = gpt_reply.replace("'", '"')
+        print(gpt_reply)
+        # 文字列をJSON形式に変換
+        data = json.loads(gpt_reply)
+        print(data)
+
+        try:
+            gpt_reply = gpt_reply.replace("'''", "")
+            gpt_reply = gpt_reply.replace("```", "")
+            gpt_reply = gpt_reply.replace("json", "")
+            gpt_reply = gpt_reply.replace("'", '"')
+            # 文字列をJSON形式に変換
+            data = json.loads(gpt_reply)
+            print(data)
+            return data
+        except:
+            return None
+
     else:
         print('【ERROR】')
         print(fetch_result)
         return None
+
+
 
 class PJ_Operation:
     def __init__(self):
@@ -169,7 +213,7 @@ class PJ_Operation:
             if issues:
                 for issue in issues:
                     print(f"Issue #{issue['number']}: {issue['title']}")
-                    issue_list.append({'title':issue['title'],'description':issue['body']})
+                    issue_list.append({'title':issue['title'],'function':issue['body'],'number':issue['number']})
             else:
                 print("現在、オープンなIssueはありません。")
         else:
@@ -224,6 +268,10 @@ class PJ_Operation:
 
         print(gpt_reply)
 
+        gpt_reply = gpt_reply.replace("'''", "")
+        gpt_reply = gpt_reply.replace("```", "")
+        gpt_reply = gpt_reply.replace("json", "")
+        gpt_reply = gpt_reply.replace("'", '"')
         # 文字列をJSON形式に変換
         data = json.loads(gpt_reply)
 
@@ -234,9 +282,11 @@ class PJ_Operation:
 
         issue_list = {'PJ_name':data['PJ_name'],'issue':[]}
 
+        count = 1
         for i in data['tasks']:
             self.create_issue(data['PJ_name'],i['title'],body = i['function'])
-            issue_list['issue'].append({'title':i['title'],'function':i['function']})
+            issue_list['issue'].append({'title':i['title'],'function':i['function'],'number':count})
+            count += 1
         
         return issue_list
 
@@ -286,7 +336,7 @@ async def test_command(interaction: discord.Interaction,
 
     embed = discord.Embed(title = '**'+issue_list['PJ_name']+'**', color = 0x00ff00, description = pj_description)
     for i in issue_list['issue']:
-        embed.add_field(name = '__'+i['title']+'__',value = i['function'],inline=False)
+        embed.add_field(name = '__#'+str(i['number'])+' ['+i['title']+']__',value = i['function'],inline=False)
     embed.set_footer(text="PJ Task-List")
     
     await interaction.channel.send(embed = embed)
@@ -303,11 +353,83 @@ async def test_command(interaction: discord.Interaction,
 
     embed = discord.Embed(title = '**'+pj_name+'**', color = 0xcc00aa, description = PJ_description)
     for i in issue_list:
-        embed.add_field(name = '__'+i['title']+'__',value = i['description'],inline=False)
+        embed.add_field(name = '__#'+str(i['number'])+' ['+i['title']+']__',value = i['function'],inline=False)
     embed.set_footer(text="PJ Task-List")
     
     await interaction.channel.send(embed = embed)
 
+
+@tree.command(name="complete_task",description="タスク完了申請をします")
+async def test_command(interaction: discord.Interaction,
+                        pj_name: str,
+                        issue_number:int,
+                        github_url:str,
+                        wallet_id:str):
+    await interaction.response.send_message('タスクの完了申請を開始します',ephemeral=True)
+    issue_list = PJO.get_issues(pj_name)
+    for i in issue_list:
+        if i['number'] == issue_number:
+            evaluate_result = evaluate_code(github_url,i['title']+'\n'+i['function'])
+            issue_title = i['title']
+            #issue_function = i['function']
+            break
+    
+    embed = discord.Embed(title = '**評価申請**', color = 0xffffff, description = pj_name+'\n'+str(issue_number))
+    embed.add_field(name = 'リポジトリー名',value = pj_name,inline=False)
+    embed.add_field(name = 'タスクタイトル',value = issue_title,inline=False)
+    embed.add_field(name = 'Issue Number',value = issue_number,inline=False)
+    embed.add_field(name = '付与トークン',value = str(evaluate_result['cost'])+'MOP',inline=False)
+    embed.add_field(name = '評価理由',value = evaluate_result['reason'],inline=False)
+    embed.add_field(name = '合致率',value = str(evaluate_result['match_percent']),inline=False)
+    embed.add_field(name = '評価対象コード',value = github_url,inline=False)
+    
+    if int(evaluate_result['match_percent']) >= 60:
+        now_hs = hashlib.sha256(str(time.time()).encode()).hexdigest()
+        embed.add_field(name = '申請結果',value = '受領',inline=False)
+        embed.add_field(name = 'トークン付与コード',value = now_hs,inline=False)
+        embed.set_footer(text="申請を受け付けました")
+        await interaction.channel.send(embed = embed)
+
+        #wallet_id = "0xd525f542c3F2d16D12dA68578bd69d068A854BD0"
+        token_amount = float(evaluate_result['cost'])  # 🔹 10 MOP
+        amount_wei = web3.to_wei(token_amount, "ether")
+
+        try:
+            print(f"🔹 {wallet_id} に {token_amount} MOP を発行中...")
+            tx_hash = CO.mint_tokens(wallet_id, amount_wei)
+
+            if tx_hash:
+                print(f"✅ トークン発行トランザクション: {tx_hash}")
+
+                # ✅ 10秒間トランザクションの確認
+                success = CO.wait_for_mint(tx_hash, timeout=100)
+
+                if success:
+                    new_balance = CO.contract.functions.balanceOf(wallet_id).call()
+                    print(f"💰 新しいトークン残高: {web3.from_wei(new_balance, 'ether')} MOP")
+                    PJO.close_issue(pj_name,issue_number)
+                    embed = discord.Embed(title = '**トークン付与完了**', color = 0x998800, description = pj_name+'\n'+str(issue_number))
+                    embed.add_field(name = 'トークン付与コード',value = now_hs,inline=False)
+                    embed.add_field(name = '送付先',value = wallet_id,inline=False)
+                    embed.add_field(name = '付与トークン量',value = str(evaluate_result['cost'])+'MOP',inline=False)
+                    embed.set_footer(text="トークンを付与しました")
+                    await interaction.channel.send(embed = embed)
+                else:
+                    print("❌ トランザクションの確認ができなかったため、仮の残高を表示")
+
+            else:
+                print("❌ トークン発行に失敗しました")
+
+        except Exception as e:
+            print(f"❌ エラー: {str(e)}")
+    else:
+        embed.add_field(name = '申請結果',value = '不受理',inline=False)
+        embed.set_footer(text="合致率が基準値を満たさず不受理")
+        await interaction.channel.send(embed = embed)
+
+
+
+    
 
 
 @tree.command(name="稼働終了",description="Botを停止させる。管理者権限必須")
