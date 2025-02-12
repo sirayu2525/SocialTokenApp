@@ -3,7 +3,6 @@ from discord import app_commands
 import os
 
 import openai
-import os
 import requests
 import json
 import Contract_Operation as CO
