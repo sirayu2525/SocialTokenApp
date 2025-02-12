@@ -7,14 +7,23 @@ import requests
 import json
 import Contract_Operation as CO
 import web3
-from web3 import Web3
 
 import time
 import hashlib
 
 import DB_Module
 
-DBM = DB_Module.DatabaseManager(db_name='user_db.db')
+DBM = DB_Module.DatabaseManager(db_name='user_data.db')
+
+'''
+discord_name TEXT PRIMARY KEY,
+wallet_id TEXT UNIQUE NOT NULL,
+balance REAL DEFAULT 0.0,
+github_name TEXT UNIQUE
+'''
+
+if not DBM.table_exists('base_table'):
+    DBM.create_table('base_table','discord_name TEXT PRIMARY KEY,wallet_id TEXT UNIQUE NOT NULL,balance REAL DEFAULT 0.0,github_name TEXT UNIQUE')
 
 # OpenAIのAPIキーを設定
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -395,7 +404,7 @@ async def test_command(interaction: discord.Interaction,
 
         #wallet_id = "0xd525f542c3F2d16D12dA68578bd69d068A854BD0"
         token_amount = float(evaluate_result['cost'])  # 🔹 10 MOP
-        amount_wei = Web3.to_wei(token_amount, "ether")
+        amount_wei = web3.to_wei(token_amount, "ether")
 
         try:
             print(f"🔹 {wallet_id} に {token_amount} MOP を発行中...")
@@ -409,13 +418,12 @@ async def test_command(interaction: discord.Interaction,
 
                 if success:
                     new_balance = CO.contract.functions.balanceOf(wallet_id).call()
-                    print(f"💰 新しいトークン残高: {Web3.from_wei(new_balance, 'ether')} MOP")
+                    print(f"💰 新しいトークン残高: {web3.from_wei(new_balance, 'ether')} MOP")
                     PJO.close_issue(pj_name,issue_number)
                     embed = discord.Embed(title = '**トークン付与完了**', color = 0x998800, description = pj_name+'\n'+str(issue_number))
                     embed.add_field(name = 'トークン付与コード',value = now_hs,inline=False)
                     embed.add_field(name = '送付先',value = wallet_id,inline=False)
                     embed.add_field(name = '付与トークン量',value = str(evaluate_result['cost'])+'MOP',inline=False)
-                    embed.add_field(name = 'トランザクションハッシュ',value = str(tx_hash),inline=False)
                     embed.set_footer(text="トークンを付与しました")
                     await interaction.channel.send(embed = embed)
                 else:
@@ -432,7 +440,13 @@ async def test_command(interaction: discord.Interaction,
         await interaction.channel.send(embed = embed)
 
 
-
+@tree.command(name="link_info",description="リンク情報を更新します")
+async def test_command(interaction: discord.Interaction,
+                        github_account: str,
+                        wallet_id:str):
+    await interaction.response.send_message('リンク情報を更新します',ephemeral=True)
+    
+    
     
 
 
