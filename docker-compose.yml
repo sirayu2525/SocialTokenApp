@@ -1,0 +1,22 @@
+version: '3.7'
+services:
+  fastapi:
+    build: ./contracts-backend
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./contracts-backend/.env
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    environment:
+      - API_SERVER_IP=${API_SERVER_IP}
+    depends_on:
+      - fastapi
