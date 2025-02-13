@@ -179,4 +179,3 @@ GitHubリポジトリの「Settings」→「Secrets」→「New repository secre
 
 この構成で、GitHubへのプッシュをトリガーに自動でSakura VPSにFastAPIアプリがデプロイされ、Nginxがリバースプロキシとして機能します。
 
-
