@@ -11,6 +11,106 @@ import web3
 import time
 import hashlib
 
+import urllib3
+
+# 自己署名証明書の警告を無効化（開発環境のみ）
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+class DatabaseClient:
+    def __init__(self, base_url, api_key):
+        """
+        :param base_url: APIサーバーのURL (例: "https://localhost")
+        :param api_key: アクセス用 API キー
+        """
+        self.base_url = base_url.rstrip('/')
+        self.headers = {"X-API-Key": api_key}
+
+    def create_tables(self, table_name=None):
+        params = {}
+        if table_name:
+            params['table_name'] = table_name
+        response = requests.post(
+            f"{self.base_url}/create_tables",
+            params=params,
+            headers=self.headers,
+            verify=False
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def table_exists(self, table_name):
+        response = requests.get(
+            f"{self.base_url}/table_exists/{table_name}",
+            headers=self.headers,
+            verify=False
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def add_data(self, table_name, data):
+        """
+        任意のカラムと値の組み合わせでレコードを挿入する
+
+        :param table_name: テーブル名
+        :param data: 挿入するデータ（例: {"col1": "value1", "col2": 123}）
+        """
+        response = requests.post(
+            f"{self.base_url}/data",
+            params={'table_name': table_name},
+            json=data,
+            headers=self.headers,
+            verify=False
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_data_by_field(self, table_name, column, value):
+        params = {'table_name': table_name, 'column': column, 'value': value}
+        response = requests.get(
+            f"{self.base_url}/data/search",
+            params=params,
+            headers=self.headers,
+            verify=False
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def update_columns(self, table_name, column, search_value, updates):
+        """
+        指定した条件に合致する行の、複数のカラムを一括更新する。
+
+        :param table_name: 更新するテーブル名
+        :param column: 検索対象のカラム名
+        :param search_value: 検索する値
+        :param updates: 更新するカラム名と新しい値の辞書（例: {"col1": "new_value1", "col2": "new_value2"}）
+        :return: 更新後のデータ（辞書形式）
+        """
+        params = {
+            'table_name': table_name,
+            'column': column,
+            'search_value': search_value
+        }
+        response = requests.put(
+            f"{self.base_url}/data/update_columns",
+            params=params,
+            json={"updates": updates},  # 辞書を JSON ボディで送信
+            headers=self.headers,
+            verify=False
+        )
+        response.raise_for_status()
+        return response.json()
+
+
+
+database_url = "https://localhost:50403"  # 必要に応じてホスト名/ポートを調整
+DB_api_key = "mysecretkey"
+
+DB_client = DatabaseClient(database_url, DB_api_key)
+
+table_name = "data_records"
+
+
+
 #import DB_Module
 
 #DBM = DB_Module.DatabaseManager(db_name='user_data.db')
@@ -375,9 +475,19 @@ async def test_command(interaction: discord.Interaction,
 async def test_command(interaction: discord.Interaction,
                         pj_name: str,
                         issue_number:int,
-                        github_url:str,
-                        wallet_id:str):
+                        github_url:str):
     await interaction.response.send_message('タスクの完了申請を開始します',ephemeral=True)
+
+    user_name = interaction.user.name  # アカウント名（ユーザーネーム）を取得
+    found = DB_client.get_data_by_field(table_name, "discord_name", user_name)
+    if found == None:
+        embed = discord.Embed(title = '**リンク情報不備**', color = 0xff4444, description = '')
+        embed.add_field(name = '【お願い】',value = 'タスク完了申請を行うためには情報リンクを行ってください',inline=False)
+        await interaction.channel.send(embed = embed)
+        return
+    else:
+        wallet_id = found['wallet_id']
+    
     issue_list = PJO.get_issues(pj_name)
     for i in issue_list:
         if i['number'] == issue_number:
@@ -442,12 +552,45 @@ async def test_command(interaction: discord.Interaction,
 
 @tree.command(name="link_info",description="リンク情報を更新します")
 async def test_command(interaction: discord.Interaction,
-                        github_account: str,
+                        github_username: str,
                         wallet_id:str):
     await interaction.response.send_message('リンク情報を更新します',ephemeral=True)
-    
-    
-    
+    user_name = interaction.user.name  # アカウント名（ユーザーネーム）を取得
+    found = DB_client.get_data_by_field(table_name, "discord_name", user_name)
+    if found == None:
+        updated = DB_client.update_column(table_name,
+                                          "discord_name", user_name, 
+                                          {"github_username": github_username, "wallet_id": wallet_id})
+        if updated == None:
+            embed = discord.Embed(title = '**リンク情報の更新**', color = 0xff4444, description = '')
+            embed.add_field(name = '結果',value = '失敗',inline=False)
+            await interaction.channel.send(embed = embed)
+        else:
+            embed = discord.Embed(title = '**リンク情報の更新**', color = 0x44ff44, description = '')
+            embed.add_field(name = '結果',value = '成功',inline=False)
+            await interaction.channel.send(embed = embed)
+    else:
+        added = DB_client.add_data(table_name, {"discord_name":user_name, 
+                                                "github_username": github_username,
+                                                "wallet_id":wallet_id})
+        if updated == None:
+            embed = discord.Embed(title = '**リンク情報の更新**', color = 0xff4444, description = '')
+            embed.add_field(name = '結果',value = '失敗',inline=False)
+            await interaction.channel.send(embed = embed)
+        else:
+            embed = discord.Embed(title = '**リンク情報の更新**', color = 0x44ff44, description = '')
+            embed.add_field(name = '結果',value = '成功',inline=False)
+            await interaction.channel.send(embed = embed)
+
+
+'''
+id = Column(Integer, primary_key=True, index=True)  # 自動インクリメントの ID
+discord_name = Column(String(100), nullable=False)  # Discordアカウント名
+github_username = Column(String(100), nullable=False)  # GitHubユーザー名
+balance = Column(Integer, default=0)  # 残高（日本円）
+wallet_id = Column(String(255), unique=True, nullable=False)  # ウォレットID（文字列）
+tx_hashes = Column(JSON, default=[])  # 取引履歴（リスト型）
+'''
 
 
 @tree.command(name="稼働終了",description="Botを停止させる。管理者権限必須")

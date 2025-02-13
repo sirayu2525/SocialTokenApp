@@ -1,11 +1,12 @@
 import os
 import datetime
+from typing import Any, Dict
 
-from fastapi import FastAPI, Depends, HTTPException, Header, Request
+from fastapi import FastAPI, Depends, HTTPException, Header, Request, Body
+from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
-from sqlalchemy import insert, select, update, text  # text をインポート
+from sqlalchemy import insert, select, update, text
 from database import SessionLocal, engine, Base
-from models import DataRecord  # 例として DataRecord モデルが定義されていると仮定
 
 # ----- 自己署名証明書の自動生成処理 -----
 from cryptography import x509
@@ -54,8 +55,6 @@ def generate_self_signed_cert(cert_file: str, key_file: str, hostname: str = "lo
 generate_self_signed_cert("cert.pem", "key.pem", hostname="localhost")
 
 # ----- グローバル API キー認証（docs 関連は除外） -----
-from fastapi.routing import APIRoute
-
 API_KEY = "mysecretkey"
 
 class APIKeyRoute(APIRoute):
@@ -102,19 +101,33 @@ class DBManager:
         with engine.connect() as connection:
             return engine.dialect.has_table(connection, table_name)
 
-    def add_data(self, table_name: str, key: str, value: str) -> dict:
+    def add_data(self, table_name: str, data: Dict[str, Any]) -> dict:
+        """
+        任意のカラムと値の組み合わせでレコードを挿入します。
+        なお、data 内のキーがテーブル定義に存在するかを検証します。
+        """
         table = Base.metadata.tables.get(table_name)
         if table is None:
             raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found")
-        stmt = insert(table).values(key=key, value=value)
+        # data のキーがテーブルに存在するかチェック
+        for col in data.keys():
+            if col not in table.c:
+                raise HTTPException(status_code=400, detail=f"Column '{col}' not found in table '{table_name}'")
+        stmt = insert(table).values(**data)
         result = self.db.execute(stmt)
         self.db.commit()
-        inserted_pk = result.inserted_primary_key[0] if result.inserted_primary_key else None
-        query = select(table).where(table.c.id == inserted_pk)
-        row = self.db.execute(query).fetchone()
-        return dict(row._mapping) if row else {}
+        # primary key を使って挿入したレコードを取得（単一の PK を想定）
+        pk_columns = list(table.primary_key.columns)
+        if pk_columns:
+            pk_col = pk_columns[0]
+            inserted_pk = result.inserted_primary_key[0] if result.inserted_primary_key else None
+            if inserted_pk is not None:
+                query = select(table).where(pk_col == inserted_pk)
+                row = self.db.execute(query).fetchone()
+                return dict(row._mapping) if row else {}
+        return {}
 
-    def get_data_by_field(self, table_name: str, column: str, value: str) -> dict:
+    def get_data_by_field(self, table_name: str, column: str, value: Any) -> dict:
         table = Base.metadata.tables.get(table_name)
         if table is None:
             raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found")
@@ -124,25 +137,28 @@ class DBManager:
         row = self.db.execute(query).fetchone()
         return dict(row._mapping) if row else None
 
-    def update_column(self, table_name: str, column: str, search_value: str, target_column: str, new_value: str) -> dict:
+    def update_columns(self, table_name: str, column: str, search_value: Any, updates: Dict[str, Any]) -> dict:
         """
-        指定したテーブルの、特定のカラムの値が search_value に一致する行の、
-        別の指定したカラム (target_column) の値を new_value に更新する関数。
+        指定した条件に合致する行の、複数のカラムの値を一括で更新する。
 
         :param table_name: 更新するテーブル名
-        :param column: 検索条件とするカラム
-        :param search_value: 検索条件の値
-        :param target_column: 更新したいカラム名
-        :param new_value: 設定する新しい値
-        :return: 更新後のレコード（辞書形式）
+        :param column: 検索対象のカラム名
+        :param search_value: 検索する値
+        :param updates: 更新するカラム名と新しい値の辞書（例: {"col1": "new_value1", "col2": "new_value2"}）
+        :return: 更新後のデータ（辞書形式）
         """
         table = Base.metadata.tables.get(table_name)
         if table is None:
             raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found")
 
-        # 検索条件のカラムと更新対象のカラムがテーブルに存在するかチェック
-        if column not in table.c or target_column not in table.c:
-            raise HTTPException(status_code=400, detail="Invalid column name")
+        # 検索条件のカラムがテーブルに存在するかチェック
+        if column not in table.c:
+            raise HTTPException(status_code=400, detail=f"Invalid search column: '{column}'")
+
+        # 更新対象のカラムが全てテーブルに存在するかチェック
+        for target_column in updates.keys():
+            if target_column not in table.c:
+                raise HTTPException(status_code=400, detail=f"Invalid target column: '{target_column}'")
 
         # 更新前のレコードを取得
         query = select(table).where(table.c[column] == search_value)
@@ -151,7 +167,7 @@ class DBManager:
             return None
 
         # 更新処理
-        upd = update(table).where(table.c[column] == search_value).values({target_column: new_value})
+        upd = update(table).where(table.c[column] == search_value).values(**updates)
         self.db.execute(upd)
         self.db.commit()
 
@@ -159,12 +175,12 @@ class DBManager:
         row = self.db.execute(query).fetchone()
         return dict(row._mapping) if row else None
 
+
     def add_column(self, table_name: str, column_name: str, column_type: str):
         """
         指定したテーブルに新しい列を追加します。
         column_type には "VARCHAR(255)" や "INTEGER" など、データベースの型定義を文字列で指定します。
         """
-        # 実際の SQL は DBMS に依存します。ここでは PostgreSQL などの一般的な構文の例です。
         sql = f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type};"
         self.db.execute(text(sql))
         self.db.commit()
@@ -186,36 +202,56 @@ def check_table_exists(table_name: str, db: Session = Depends(get_db)):
     return {"table": table_name, "exists": exists}
 
 @app.post("/data")
-def add_data(table_name: str, key: str, value: str, db: Session = Depends(get_db)):
+def add_data(table_name: str, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+    """
+    任意のカラムと値の組み合わせでレコードを追加するエンドポイント
+    リクエストボディは JSON 形式で、例:
+    {
+      "data": {
+         "col1": "value1",
+         "col2": 123,
+         "col3": "value3"
+      }
+    }
+    ※ 今回は直接 dict を受け取るため、ラップするキーは不要です。
+    """
     manager = DBManager(db)
-    record = manager.add_data(table_name, key, value)
+    record = manager.add_data(table_name, data)
     return record
 
 @app.get("/data/search")
-def get_data_by_field(table_name: str, column: str, value: str, db: Session = Depends(get_db)):
+def get_data_by_field(table_name: str, column: str, value: Any, db: Session = Depends(get_db)):
     manager = DBManager(db)
     record = manager.get_data_by_field(table_name, column, value)
     if record is None:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
 
-@app.put("/data/update_column")
-def update_column(
+@app.put("/data/update_columns")
+def update_columns(
     table_name: str,
     column: str,
-    search_value: str,
-    target_column: str,
-    new_value: str,
+    search_value: Any,
+    updates: Dict[str, Any] = Body(...),
     db: Session = Depends(get_db)
 ):
     """
-    特定のカラムの値を特定のデータに置き換えるエンドポイント
+    特定の条件に一致するレコードの複数のカラムを一括更新するエンドポイント。
+
+    リクエスト例:
+    {
+      "updates": {
+        "col1": "new_value1",
+        "col2": "new_value2"
+      }
+    }
     """
     manager = DBManager(db)
-    record = manager.update_specific_column(table_name, column, search_value, target_column, new_value)
+    record = manager.update_columns(table_name, column, search_value, updates)
     if record is None:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
+
 
 @app.post("/add_column")
 def add_column_endpoint(table_name: str, column_name: str, column_type: str, db: Session = Depends(get_db)):
