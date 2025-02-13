@@ -57,14 +57,25 @@ class DatabaseClient:
         response.raise_for_status()
         return response.json()
 
-    def update_data_by_field(self, table_name, column, search_value, new_key=None, new_value=None):
-        params = {'table_name': table_name, 'column': column, 'search_value': search_value}
-        if new_key is not None:
-            params['new_key'] = new_key
-        if new_value is not None:
-            params['new_value'] = new_value
+    def update_column(self, table_name, column, search_value, target_column, new_value):
+        """
+        指定した条件に合致する行の、特定のカラムの値を新しい値に置き換える
+        :param table_name: 更新するテーブル名
+        :param column: 検索対象のカラム名
+        :param search_value: 検索する値
+        :param target_column: 更新対象のカラム名
+        :param new_value: 設定する新しい値
+        :return: 更新後のデータ（辞書形式）
+        """
+        params = {
+            'table_name': table_name,
+            'column': column,
+            'search_value': search_value,
+            'target_column': target_column,
+            'new_value': new_value
+        }
         response = requests.put(
-            f"{self.base_url}/data/update_by_field",
+            f"{self.base_url}/data/update_column",
             params=params,
             headers=self.headers,
             verify=False
@@ -78,7 +89,7 @@ if __name__ == "__main__":
     client = DatabaseClient(base_url, api_key)
 
     # 例として、"data_records" というテーブル名を指定（models.py の __tablename__ と一致させる）
-    table_name = "data_records"
+    table_name = "new_records"
 
     try:
         # テーブル作成
@@ -99,9 +110,9 @@ if __name__ == "__main__":
         found = client.get_data_by_field(table_name, "key", "example_key")
         print(found)
 
-        # データの更新
-        print("\nUpdating data by field:")
-        updated = client.update_data_by_field(table_name, "key", "example_key", new_value="updated_value")
+        # 特定のカラムを更新
+        print("\nUpdating specific column:")
+        updated = client.update_column(table_name, "key", "example_key", "value", "new_updated_value")
         print(updated)
 
     except requests.HTTPError as http_err:

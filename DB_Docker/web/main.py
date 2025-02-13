@@ -124,24 +124,38 @@ class DBManager:
         row = self.db.execute(query).fetchone()
         return dict(row._mapping) if row else None
 
-    def update_data_by_field(self, table_name: str, column: str, search_value: str, new_key: str = None, new_value: str = None) -> dict:
+    def update_column(self, table_name: str, column: str, search_value: str, target_column: str, new_value: str) -> dict:
+        """
+        指定したテーブルの、特定のカラムの値が search_value に一致する行の、
+        別の指定したカラム (target_column) の値を new_value に更新する関数。
+
+        :param table_name: 更新するテーブル名
+        :param column: 検索条件とするカラム
+        :param search_value: 検索条件の値
+        :param target_column: 更新したいカラム名
+        :param new_value: 設定する新しい値
+        :return: 更新後のレコード（辞書形式）
+        """
         table = Base.metadata.tables.get(table_name)
         if table is None:
             raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found")
-        if column not in table.c:
+
+        # 検索条件のカラムと更新対象のカラムがテーブルに存在するかチェック
+        if column not in table.c or target_column not in table.c:
             raise HTTPException(status_code=400, detail="Invalid column name")
+
+        # 更新前のレコードを取得
         query = select(table).where(table.c[column] == search_value)
         row = self.db.execute(query).fetchone()
         if not row:
             return None
-        update_values = {}
-        if new_key is not None:
-            update_values['key'] = new_key
-        if new_value is not None:
-            update_values['value'] = new_value
-        upd = update(table).where(table.c[column] == search_value).values(**update_values)
+
+        # 更新処理
+        upd = update(table).where(table.c[column] == search_value).values({target_column: new_value})
         self.db.execute(upd)
         self.db.commit()
+
+        # 更新後のデータを取得して返す
         row = self.db.execute(query).fetchone()
         return dict(row._mapping) if row else None
 
@@ -185,17 +199,20 @@ def get_data_by_field(table_name: str, column: str, value: str, db: Session = De
         raise HTTPException(status_code=404, detail="Record not found")
     return record
 
-@app.put("/data/update_by_field")
-def update_data_by_field(
+@app.put("/data/update_column")
+def update_column(
     table_name: str,
     column: str,
     search_value: str,
-    new_key: str = None,
-    new_value: str = None,
+    target_column: str,
+    new_value: str,
     db: Session = Depends(get_db)
 ):
+    """
+    特定のカラムの値を特定のデータに置き換えるエンドポイント
+    """
     manager = DBManager(db)
-    record = manager.update_data_by_field(table_name, column, search_value, new_key, new_value)
+    record = manager.update_specific_column(table_name, column, search_value, target_column, new_value)
     if record is None:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
