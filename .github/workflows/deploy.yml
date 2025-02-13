@@ -15,11 +15,11 @@ jobs:
 
     - name: Create .env file
       run: |
-        echo "INFURA_URL=${{ secrets.INFURA_URL }}" >> .contracts-backend/.env
-        echo "PRIVATE_KEY=${{ secrets.PRIVATE_KEY }}" >> .contracts-backend/.env
-        echo "CONTRACT_ADDRESS=${{ secrets.CONTRACT_ADDRESS }}" >> .contracts-backend/.env
-        echo "ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY }}" >> .contracts-backend/.env
-        echo "API_SERVER_IP=${{ secrets.API_SERVER_IP }}" > .env
+        echo "INFURA_URL=${{ secrets.INFURA_URL }}" >> ./contracts-backend/.env
+        echo "PRIVATE_KEY=${{ secrets.PRIVATE_KEY }}" >> ./contracts-backend/.env
+        echo "CONTRACT_ADDRESS=${{ secrets.CONTRACT_ADDRESS }}" >> ./contracts-backend/.env
+        echo "ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY }}" >> ./contracts-backend/.env
+        echo "API_SERVER_IP=${{ secrets.API_SERVER_IP }}" >> ./contracts-backend/.env
 
     - name: Deploy with SSH
       uses: appleboy/ssh-action@v0.1.6

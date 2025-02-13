@@ -61,7 +61,6 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", 
 ### 3. docker-compose.yml
 
 ```yaml
-version: '3.7'
 services:
   fastapi:
     build: ./contracts-backend
@@ -79,8 +78,8 @@ services:
       - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-    environment:
-      - API_SERVER_IP=${API_SERVER_IP}
+    env_file:
+      - ./contracts-backend/.env
     depends_on:
       - fastapi
 ```
@@ -94,14 +93,12 @@ events {
     multi_accept on;
 }
 http {
-    resolver 127.0.0.11;
-
     server {
         listen 80;
         server_name your_domain_or_ip;
 
         location / {
-            proxy_pass http://$API_SERVER_IP:8000;
+            proxy_pass http://fastapi:8000;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -132,11 +129,11 @@ jobs:
 
     - name: Create .env file
       run: |
-        echo "INFURA_URL=${{ secrets.INFURA_URL }}" >> .contracts-backend/.env
-        echo "PRIVATE_KEY=${{ secrets.PRIVATE_KEY }}" >> .contracts-backend/.env
-        echo "CONTRACT_ADDRESS=${{ secrets.CONTRACT_ADDRESS }}" >> .contracts-backend/.env
-        echo "ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY }}" >> .contracts-backend/.env
-        echo "API_SERVER_IP=${{ secrets.API_SERVER_IP }}" >> .contracts-backend/.env
+        echo "INFURA_URL=${{ secrets.INFURA_URL }}" >> ./contracts-backend/.env
+        echo "PRIVATE_KEY=${{ secrets.PRIVATE_KEY }}" >> ./contracts-backend/.env
+        echo "CONTRACT_ADDRESS=${{ secrets.CONTRACT_ADDRESS }}" >> ./contracts-backend/.env
+        echo "ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY }}" >> ./contracts-backend/.env
+        echo "API_SERVER_IP=${{ secrets.API_SERVER_IP }}" >> ./contracts-backend/.env
 
     - name: Deploy with SSH
       uses: appleboy/ssh-action@v0.1.6
