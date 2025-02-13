@@ -11,9 +11,9 @@ import web3
 import time
 import hashlib
 
-import DB_Module
+#import DB_Module
 
-DBM = DB_Module.DatabaseManager(db_name='user_data.db')
+#DBM = DB_Module.DatabaseManager(db_name='user_data.db')
 
 '''
 discord_name TEXT PRIMARY KEY,
@@ -22,8 +22,8 @@ balance REAL DEFAULT 0.0,
 github_name TEXT UNIQUE
 '''
 
-if not DBM.table_exists('base_table'):
-    DBM.create_table('base_table','discord_name TEXT PRIMARY KEY,wallet_id TEXT UNIQUE NOT NULL,balance REAL DEFAULT 0.0,github_name TEXT UNIQUE')
+#if not DBM.table_exists('base_table'):
+#    DBM.create_table('base_table','discord_name TEXT PRIMARY KEY,wallet_id TEXT UNIQUE NOT NULL,balance REAL DEFAULT 0.0,github_name TEXT UNIQUE')
 
 # OpenAIのAPIキーを設定
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

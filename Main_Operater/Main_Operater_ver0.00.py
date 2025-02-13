@@ -12,9 +12,9 @@ from web3 import Web3
 import time
 import hashlib
 
-import DB_Module
+#import DB_Module
 
-DBM = DB_Module.DatabaseManager(db_name='user_db.db')
+#DBM = DB_Module.DatabaseManager(db_name='user_db.db')
 
 # OpenAIのAPIキーを設定
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
