@@ -576,6 +576,10 @@ def mint_tokens_api(request: MintRequest, api_key: str = Header(None)):
         "new_balance": web3.from_wei(new_balance_wei, "ether")   # ✅ 現在のトークン残高
     }
 
+@app.get("/")
+def read_root():
+    return {"message": "Hello, FastAPI!"}
+
 # ✅ テスト用
 if __name__ == "__main__":
     wallet_id = "0xd525f542c3F2d16D12dA68578bd69d068A854BD0"
