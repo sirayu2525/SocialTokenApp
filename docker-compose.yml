@@ -15,6 +15,18 @@ services:
       - app_network
     restart: always
 
+  db_api:
+    build: ./DB_server
+    container_name: db_api
+    ports:
+      # - "8000:80"  # ホストの8000番ポートをコンテナの80番ポートにマッピング
+      - "443:443"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://myuser:mypassword@db:5432/mydatabase
+
+    
   fastapi:
     build: ./contracts-backend
     container_name: fastapi_app
