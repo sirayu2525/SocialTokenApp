@@ -266,3 +266,6 @@ def add_column_endpoint(table_name: str, column_name: str, column_type: str, db:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the FastAPI DB Operations API Server!"}
