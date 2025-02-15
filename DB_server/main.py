@@ -3,6 +3,8 @@ import datetime
 from typing import Any, Dict
 
 from fastapi import FastAPI, Depends, HTTPException, Header, Request, Body
+from fastapi import Query
+import json
 from fastapi.routing import APIRoute
 from sqlalchemy.orm import Session
 from sqlalchemy import insert, select, update, text
@@ -232,7 +234,7 @@ def get_data_by_field(table_name: str, column: str, value: Any, db: Session = De
     #     raise HTTPException(status_code=404, detail="Record not found")
     return record
 
-@app.post("/data/update_columns")
+@app.get("/data/update_columns")
 def update_columns(
     table_name: str,
     column: str,
@@ -241,18 +243,18 @@ def update_columns(
     db: Session = Depends(get_db)
 ):
     """
-    特定の条件に一致するレコードの複数のカラムを一括更新するエンドポイント。
+    特定の条件に一致するレコードの複数のカラムを一括更新するエンドポイント。(GET メソッドで実行)
 
-    リクエスト例:
-    {
-      "updates": {
-        "col1": "new_value1",
-        "col2": "new_value2"
-      }
-    }
+    クエリ例:
+    /data/update_columns?table_name=your_table&column=col1&search_value=value1&updates={"col2": "new_value1", "col3": "new_value2"}
     """
+    try:
+        updates_dict = json.loads(updates)  # JSON文字列を辞書に変換
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON format for 'updates'")
+    
     manager = DBManager(db)
-    record = manager.update_columns(table_name, column, search_value, updates)
+    record = manager.update_columns(table_name, column, search_value, updates_dict)
     if record is None:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
