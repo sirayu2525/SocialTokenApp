@@ -18,8 +18,16 @@ import Token_Class
 
 import urllib
 
+from dotenv import load_dotenv
+
+# .envファイルを読み込む
+load_dotenv()
+
+
 # 自己署名証明書の警告を無効化（開発環境のみ）
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
 
 class DatabaseClient:
     def __init__(self, base_url, api_key):

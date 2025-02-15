@@ -95,6 +95,29 @@ class DatabaseClient:
         response.raise_for_status()
         return response.json()
 
+    def add_column(self, table_name, column_name, column_type):
+        """
+        指定したテーブルに新しい列を追加するエンドポイントに対してリクエストを送信します。
+
+        :param table_name: 対象のテーブル名
+        :param column_name: 追加するカラム名
+        :param column_type: カラムのデータ型（例: "VARCHAR(255)"）
+        """
+        params = {
+            'table_name': table_name,
+            'column_name': column_name,
+            'column_type': column_type
+        }
+
+        response = requests.post(
+            f"{self.base_url}/add_column",
+            params=params,
+            headers=self.headers,
+            verify=False
+        )
+        response.raise_for_status()
+        return response.json()
+
 
 
 #API →　Sepolia
@@ -126,13 +149,17 @@ if __name__ == "__main__":
 
         # データの検索
         #print("\nSearching data by field:")
-        found = client.get_data_by_field(table_name, "discord_name", "Test_AC")
+        found = client.get_data_by_field(table_name, "discord_name", "hex5541")
         print(found)
 
         # 特定のカラムを更新
-        print("\nUpdating specific column:")
-        updated = client.update_columns(table_name, "discord_name", "Test_AC", {"github_username":"asd",'wallet_id':'0x0x'})
-        print(updated)
+        #print("\nUpdating specific column:")
+        #updated = client.update_columns(table_name, "discord_name", "Test_AC", {"github_username":"asd",'wallet_id':'0x0x'})
+        #print(updated)
+
+        #print("\nAdding new column:")
+        #new_column = client.add_column(table_name, "card_IDm", "String")
+        #print(new_column)
 
     except requests.HTTPError as http_err:
         print("HTTP error occurred:", http_err)

@@ -11,10 +11,17 @@ import urllib
 
 #https://zenn.dev/3w36zj6/articles/d3894e83cb7423
 
+import Token_Class
 
 import nfc
 import binascii
 
+from web3 import Web3
+
+Token_API_url = "http://49.212.162.72/api"
+Token_API_key = '1234567890'
+
+TAC = Token_Class.TokenApiClient(Token_API_url, admin_api_key = Token_API_key, timeout = 100)
 
 class DatabaseClient:
     def __init__(self, base_url, api_key):
@@ -149,14 +156,15 @@ class DiscordAuthApp:
     def start_inquiry(self):
         self.touch_flag = True
         with nfc.ContactlessFrontend("usb") as clf:
-            while self.touch_flag:
-                clf.connect(rdwr={"on-connect": self.on_connect, "on-release": self.on_release})
-        found = DB_client.get_data_by_field(table_name, "IDm", self.IDm)
+            clf.connect(rdwr={"on-connect": self.on_connect})
+        found = DB_client.get_data_by_field(table_name, "card_IDm", self.IDm)
         if found == None:
             self.result_label.config(text='そのカードは登録されていません')
             return {'status':'error','code':'not register'}
         else:
-            self.result_label.config(text='【ユーザー名】\n'+found['discord_name'])
+            wallet_result = TAC.get_wallet_balance(found['wallet_id'])
+            token_amount = Web3.from_wei(wallet_result['wallet_balance'], "ether")
+            self.result_label.config(text='【ユーザー名】\n'+found['discord_name']+'\n【トークン量】'+str(token_amount))
             return {'status':'success'}
     
     def start_auth(self):
@@ -189,11 +197,15 @@ class DiscordAuthApp:
         self.touch_flag = False
 
     def link_user(self,user_name):
+        print('Flag_0000')
         found = DB_client.get_data_by_field(table_name, "discord_name", user_name)
         if found == None:
+            print('Flag_0001')
             return {'status':'error','code':'Account_Not_Found'}
         else:
+            print('Flag_0002')
             self.touch_flag = True
+            print('Start_Card_Read【Link_User】')
             with nfc.ContactlessFrontend("usb") as clf:
                 #while self.touch_flag:
                 clf.connect(rdwr={"on-connect": self.on_connect})#, "on-release": self.on_release})
