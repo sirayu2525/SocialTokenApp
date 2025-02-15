@@ -475,7 +475,7 @@ def mint_tokens(wallet_id, amount):
         txn = contract.functions.mint(wallet_id, amount).build_transaction({
             "from": account.address,
             "gas": 100000,
-            "gasPrice": gas_price * 2,
+            "gasPrice": gas_price * 3,
             "nonce": nonce
         })
 

@@ -228,8 +228,8 @@ def add_data(table_name: str, data: Dict[str, Any] = Body(...), db: Session = De
 def get_data_by_field(table_name: str, column: str, value: Any, db: Session = Depends(get_db)):
     manager = DBManager(db)
     record = manager.get_data_by_field(table_name, column, value)
-    if record is None:
-        raise HTTPException(status_code=404, detail="Record not found")
+    # if record is None:
+    #     raise HTTPException(status_code=404, detail="Record not found")
     return record
 
 @app.put("/data/update_columns")
