@@ -63,6 +63,14 @@ class DatabaseClient:
         response.raise_for_status()
         return response.json()
 
+import requests
+import json
+
+class DBClient:
+    def __init__(self, base_url, headers):
+        self.base_url = base_url
+        self.headers = headers
+
     def update_columns(self, table_name, column, search_value, updates):
         """
         指定した条件に合致する行の、複数のカラムを一括更新する。
@@ -76,17 +84,20 @@ class DatabaseClient:
         params = {
             'table_name': table_name,
             'column': column,
-            'search_value': search_value
+            'search_value': search_value,
+            'updates': json.dumps(updates)  # updatesをJSON形式の文字列に変換
         }
-        response = requests.post(
+
+        # GETリクエストでクエリパラメータとして送信
+        response = requests.get(
             f"{self.base_url}/data/update_columns",
             params=params,
-            json={"updates": updates},  # 辞書を JSON ボディで送信
             headers=self.headers,
             verify=False
         )
         response.raise_for_status()
         return response.json()
+
 
 
 #API →　Sepolia
