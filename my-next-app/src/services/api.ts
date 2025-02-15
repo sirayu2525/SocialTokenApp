@@ -6,9 +6,9 @@ if (!DB_API_URL || !BLOCKCHAIN_API_URL) {
   throw new Error("環境変数が設定されていません");
 }
 
-export async function getWalletId(discord_name: string): Promise<string | null> {
+export async function getWalletId(discordId: string): Promise<string | null> {
     const response = await fetch(
-      `${DB_API_URL}/data/search?table_name=data_records&column=discord_name&value=${discord_name}`,
+      `${DB_API_URL}/data/search?table_name=data_records&column=discord_id&value=${discordId}`,
       {
         headers: {
           "X-API-Key": "mysecretkey",
@@ -22,14 +22,14 @@ export async function getWalletId(discord_name: string): Promise<string | null> 
     return data?.wallet_id ?? null;
   }
   
-export async function getWalletBalance(walletId: string): Promise<number | null> {
-  const response = await fetch(
-    `${BLOCKCHAIN_API_URL}/wallet_balance/${walletId}`
-  );
-  if (!response.ok) {
-    throw new Error("ウォレット残高の取得に失敗しました");
+  export async function getWalletBalance(walletId: string): Promise<number | null> {
+    const response = await fetch(
+      `${BLOCKCHAIN_API_URL}/wallet_balance/${walletId}`
+    );
+    if (!response.ok) {
+      throw new Error("ウォレット残高の取得に失敗しました");
+    }
+    const data = await response.json();
+    return data?.wallet_balance ?? null;
   }
-  const data = await response.json();
-  return data?.wallet_balance ?? null;
-}
   

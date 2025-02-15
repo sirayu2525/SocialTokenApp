@@ -1,64 +1,58 @@
-// /app/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSession, signIn, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
-
-export function Clock(){
-    const [time, setTime] = useState(new Date().toLocaleTimeString());
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setTime(new Date().toLocaleTimeString());
-        }, 1000);
-    
-        return () => clearInterval(timer);
-    },[]);
-
-    return <p>{time}</p>;
-}
+import React, { useState } from "react";
+import { getWalletId, getWalletBalance } from "@/services/api";
 
 export default function Home() {
-  const { data: session } = useSession();
-  const router = useRouter();
+  const [discordId, setDiscordId] = useState("");
+  const [walletId, setWalletId] = useState<string | null>(null);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSearch = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const wallet = await getWalletId(discordId);
+      if (!wallet) {
+        setError("ウォレットIDが見つかりませんでした");
+        return;
+      }
+      setWalletId(wallet);
+      const bal = await getWalletBalance(wallet);
+      setBalance(bal);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6">
-      {/*  キャッチコピー */}
-      <h1 className="text-4xl font-bold mb-4 text-center">
-        🎉 Welcome to Social Token App!
-      </h1>
-      <p className="text-lg text-gray-600 mb-8 text-center">
-        Discordでログインして、あなたのウォレット残高を確認しましょう。
-      </p>
-
-      {/*  ログイン状態による表示切り替え */}
-      {session ? (
-        <div className="text-center">
-          <p className="mb-4">
-             ようこそ、<strong>{session.user?.name}</strong> さん！
-          </p>
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            ダッシュボードへ進む
-          </button>
-          <button
-            onClick={() => signOut()}
-            className="mt-4 text-red-500 underline"
-          >
-            ログアウト
-          </button>
+    <div className="p-6 max-w-lg mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Discord IDでウォレット残高を確認</h1>
+      <input
+        type="text"
+        value={discordId}
+        onChange={(e) => setDiscordId(e.target.value)}
+        placeholder="Discord IDを入力"
+        className="border p-2 rounded w-full mb-4"
+      />
+      <button
+        onClick={handleSearch}
+        disabled={loading}
+        className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50"
+      >
+        検索
+      </button>
+      {loading && <p className="mt-4">検索中...</p>}
+      {error && <p className="text-red-500 mt-4">{error}</p>}
+      {walletId && (
+        <div className="mt-4">
+          <p>ウォレットID: {walletId}</p>
+          <p className="text-green-500">残高: {balance ?? "取得中..."} MOP</p>
         </div>
-      ) : (
-        <button
-          onClick={() => router.push("/login")}
-          className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600"
-        >
-           Discordでログイン
-        </button>
       )}
     </div>
   );
