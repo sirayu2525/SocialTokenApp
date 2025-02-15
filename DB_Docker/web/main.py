@@ -9,12 +9,12 @@ from sqlalchemy import insert, select, update, text
 from database import SessionLocal, engine, Base
 
 # ----- 自己署名証明書の自動生成処理 -----
-from cryptography import x509
-from cryptography.x509.oid import NameOID
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
+#from cryptography import x509
+#from cryptography.x509.oid import NameOID
+#from cryptography.hazmat.primitives import hashes, serialization
+#from cryptography.hazmat.primitives.asymmetric import rsa
 
-def generate_self_signed_cert(cert_file: str, key_file: str, hostname: str = "localhost"):
+'''def generate_self_signed_cert(cert_file: str, key_file: str, hostname: str = "localhost"):
     if os.path.exists(cert_file) and os.path.exists(key_file):
         return
 
@@ -52,7 +52,7 @@ def generate_self_signed_cert(cert_file: str, key_file: str, hostname: str = "lo
         f.write(cert.public_bytes(serialization.Encoding.PEM))
 
 # モジュール読み込み時に証明書を自動生成
-generate_self_signed_cert("cert.pem", "key.pem", hostname="localhost")
+generate_self_signed_cert("cert.pem", "key.pem", hostname="localhost")'''
 
 # ----- グローバル API キー認証（docs 関連は除外） -----
 API_KEY = "mysecretkey"
@@ -71,7 +71,7 @@ class APIKeyRoute(APIRoute):
         return custom_route_handler
 
 app = FastAPI(
-    title="FastAPI DB Operations API Server (HTTPS with Self-Signed Cert)",
+    title="FastAPI DB Operations API Server",
     route_class=APIKeyRoute
 )
 

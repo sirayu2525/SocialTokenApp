@@ -89,41 +89,53 @@ class DatabaseClient:
         return response.json()
 
 
+#API →　Sepolia
+#DB　→　DB
+
 
 if __name__ == "__main__":
-    base_url = "https://localhost:50403"  # 必要に応じてホスト名/ポートを調整
+    base_url = "http://49.212.162.72/db"  # 必要に応じてホスト名/ポートを調整
     api_key = "mysecretkey"
     client = DatabaseClient(base_url, api_key)
 
     # 例として、"new_records" というテーブル名を指定（models.py の __tablename__ と一致させる）
-    table_name = "new_records"
+    table_name = "data_records"
 
     try:
         # テーブル作成
-        print("Creating table:")
-        print(client.create_tables(table_name))
+        #print("Creating table:")
+        #print(client.create_tables(table_name))
 
         # テーブル存在確認
         print("\nChecking table existence:")
         print(client.table_exists(table_name))
 
         # データの追加（任意のカラムと値の組み合わせを指定）
-        print("\nAdding data:")
+        #print("\nAdding data:")
         # ここでは例として、"key" と "value" のペアを送信
-        added = client.add_data(table_name, {"key": "example_key", "value": "example_value"})
-        print(added)
+        added = client.add_data(table_name, {"discord_name": "Test_AC"})
+        #print(added)
 
         # データの検索
         print("\nSearching data by field:")
-        found = client.get_data_by_field(table_name, "key", "example_key")
+        found = client.get_data_by_field(table_name, "discord_name", "Test_AC")
         print(found)
 
         # 特定のカラムを更新
-        print("\nUpdating specific column:")
-        updated = client.update_column(table_name, "key", "example_key", "value", "new_updated_value")
-        print(updated)
+        #print("\nUpdating specific column:")
+        #updated = client.update_column(table_name, "key", "example_key", "value", "new_updated_value")
+        #print(updated)
 
     except requests.HTTPError as http_err:
         print("HTTP error occurred:", http_err)
     except Exception as err:
         print("Unexpected error occurred:", err)
+
+'''
+id = Column(Integer, primary_key=True, index=True)  # 自動インクリメントの ID
+discord_name = Column(String(100), nullable=False)  # Discordアカウント名
+github_username = Column(String(100), nullable=False)  # GitHubユーザー名
+balance = Column(Integer, default=0)  # 残高（日本円）
+wallet_id = Column(String(255), unique=True, nullable=False)  # ウォレットID（文字列）
+tx_hashes = Column(JSON, default=[])  # 取引履歴（リスト型）
+'''

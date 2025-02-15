@@ -215,7 +215,7 @@ def evaluate_code(github_raw_url,issue_description):
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",  # または gpt-4 など
             messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "system", "content": "You are a helpful Engineer."},
                 {"role": "user", "content": text}
             ]
         )
@@ -526,6 +526,12 @@ async def test_command(interaction: discord.Interaction,
             mint_response = TAC.mint_tokens(wallet_id, amount_wei)
 
             if mint_response['status'] == 'Success':
+
+                trade_list = found['tx_hashes']
+                trade_list.append(str(mint_response['tx_hash']))
+
+                DB_client.update_columns(table_name, "discord_name", user_name, {'tx_hash':trade_list})
+
                 #new_balance = CO.contract.functions.balanceOf(wallet_id).call()
                 #print(f"💰 新しいトークン残高: {web3.from_wei(new_balance, 'ether')} MOP")
                 PJO.close_issue(pj_name,issue_number)
