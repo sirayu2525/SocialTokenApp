@@ -253,6 +253,7 @@ services:
       - app_network
     restart: always
 
+
 volumes:
   postgres_data:
 
