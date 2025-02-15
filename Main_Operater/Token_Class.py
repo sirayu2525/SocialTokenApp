@@ -66,7 +66,7 @@ class TokenApiClient:
         url = f"{self.base_url}/mint_tokens"
         headers = {}
         if self.admin_api_key:
-            headers["api_key"] = self.admin_api_key
+            headers["api-key"] = self.admin_api_key
 
         payload = {
             "wallet_id": wallet_id,

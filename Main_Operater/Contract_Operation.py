@@ -581,6 +581,7 @@ if __name__ == "__main__":
     wallet_id = "0xd525f542c3F2d16D12dA68578bd69d068A854BD0"
     token_amount = 10  # 🔹 10 MOP
     amount_wei = web3.to_wei(token_amount, "ether")
+    print(amount_wei)
 
     try:
         print(f"🔹 {wallet_id} に {token_amount} MOP を発行中...")

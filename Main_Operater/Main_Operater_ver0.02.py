@@ -7,6 +7,7 @@ import requests
 import json
 import Contract_Operation as CO
 import web3
+from web3 import Web3
 
 import time
 import hashlib
@@ -110,7 +111,7 @@ class DatabaseClient:
         return response.json()
 
 Token_API_url = "http://49.212.162.72/api"
-Token_API_key = 'mysecretkey'
+Token_API_key = '1234567890'
 
 TAC = Token_Class.TokenApiClient(Token_API_url, admin_api_key = Token_API_key, timeout = 100)
 
@@ -525,18 +526,18 @@ async def test_command(interaction: discord.Interaction,
 
         #wallet_id = "0xd525f542c3F2d16D12dA68578bd69d068A854BD0"
         token_amount = float(evaluate_result['cost'])  # 🔹 10 MOP
-        amount_wei = web3.to_wei(token_amount, "ether")
+        amount_wei = Web3.to_wei(token_amount, "ether")
 
         try:
             print(f"🔹 {wallet_id} に {token_amount} MOP を発行中...")
-            mint_response = TAC.mint_tokens(wallet_id, amount_wei)
+            mint_response = TAC.mint_tokens(wallet_id, token_amount)
 
             if mint_response['status'] == 'Success':
 
                 trade_list = found['tx_hashes']
                 trade_list.append(str(mint_response['tx_hash']))
 
-                DB_client.update_columns(table_name, "discord_name", user_name, {'tx_hash':trade_list})
+                DB_client.update_columns(table_name, "discord_name", user_name, {'tx_hashes':trade_list})
 
                 #new_balance = CO.contract.functions.balanceOf(wallet_id).call()
                 #print(f"💰 新しいトークン残高: {web3.from_wei(new_balance, 'ether')} MOP")
@@ -581,7 +582,7 @@ async def test_command(interaction: discord.Interaction,
             embed.add_field(name = '結果',value = '成功',inline=False)
             await interaction.channel.send(embed = embed)
     else:
-        added = DB_client.update_columns(table_name, "discord_name", user_name, 
+        updated = DB_client.update_columns(table_name, "discord_name", user_name, 
                                                 {"github_username": github_username,
                                                 "wallet_id":wallet_id})
         if updated == None:
@@ -623,4 +624,4 @@ async def on_ready():
     
 
 
-client.run(Disocrd_TOKEN)
+client.run(Disocrd_TOKEN)   
