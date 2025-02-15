@@ -100,3 +100,12 @@ npx hardhat test
 MetaMaskでSepolia（ETHのテストネット）に接続
 
 
+### Metamask
+
+npx create-react-app . --template typescript
+
+npm uninstall react react-dom
+npm install react@18.2.0 react-dom@18.2.0
+npm install @metamask/sdk-react
+
+npm install @types/react @types/react-dom --save-dev
