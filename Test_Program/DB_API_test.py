@@ -113,7 +113,7 @@ if __name__ == "__main__":
         # データの追加（任意のカラムと値の組み合わせを指定）
         #print("\nAdding data:")
         # ここでは例として、"key" と "value" のペアを送信
-        added = client.add_data(table_name, {"discord_name": "Test_AC"})
+        #added = client.add_data(table_name, {"discord_name": "Test_AC"})
         #print(added)
 
         # データの検索

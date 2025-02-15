@@ -102,12 +102,12 @@ class DatabaseClient:
         response.raise_for_status()
         return response.json()
 
-Token_API_url = "https://localhost:50505"
+Token_API_url = "http://49.212.162.72/api"
 Token_API_key = 'mysecretkey'
 
 TAC = Token_Class.TokenApiClient(Token_API_url, admin_api_key = Token_API_key, timeout = 100)
 
-database_url = "https://localhost:50403"  # 必要に応じてホスト名/ポートを調整
+database_url = "http://49.212.162.72/db"  # 必要に応じてホスト名/ポートを調整
 DB_api_key = "mysecretkey"
 
 DB_client = DatabaseClient(database_url, DB_api_key)
