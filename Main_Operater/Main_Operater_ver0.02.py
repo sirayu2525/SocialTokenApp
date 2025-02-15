@@ -563,9 +563,8 @@ async def test_command(interaction: discord.Interaction,
     user_name = interaction.user.name  # アカウント名（ユーザーネーム）を取得
     found = DB_client.get_data_by_field(table_name, "discord_name", user_name)
     if found == None:
-        updated = DB_client.update_columns(table_name,
-                                          "discord_name", user_name, 
-                                          {"github_username": github_username, "wallet_id": wallet_id})
+        updated = DB_client.add_data(table_name,
+                                          {"discord_name": user_name, "github_username": github_username, "wallet_id": wallet_id})
         if updated == None:
             embed = discord.Embed(title = '**リンク情報の更新**', color = 0xff4444, description = '')
             embed.add_field(name = '結果',value = '失敗',inline=False)
@@ -575,8 +574,8 @@ async def test_command(interaction: discord.Interaction,
             embed.add_field(name = '結果',value = '成功',inline=False)
             await interaction.channel.send(embed = embed)
     else:
-        added = DB_client.add_data(table_name, {"discord_name":user_name, 
-                                                "github_username": github_username,
+        added = DB_client.update_columns(table_name, "discord_name", user_name, 
+                                                {"github_username": github_username,
                                                 "wallet_id":wallet_id})
         if updated == None:
             embed = discord.Embed(title = '**リンク情報の更新**', color = 0xff4444, description = '')

@@ -78,7 +78,7 @@ class DatabaseClient:
             'column': column,
             'search_value': search_value
         }
-        response = requests.put(
+        response = requests.post(
             f"{self.base_url}/data/update_columns",
             params=params,
             json={"updates": updates},  # 辞書を JSON ボディで送信
@@ -117,14 +117,14 @@ if __name__ == "__main__":
         #print(added)
 
         # データの検索
-        print("\nSearching data by field:")
+        #print("\nSearching data by field:")
         found = client.get_data_by_field(table_name, "discord_name", "Test_AC")
         print(found)
 
         # 特定のカラムを更新
-        #print("\nUpdating specific column:")
-        #updated = client.update_column(table_name, "key", "example_key", "value", "new_updated_value")
-        #print(updated)
+        print("\nUpdating specific column:")
+        updated = client.update_columns(table_name, "discord_name", "Test_AC", {"github_username":"asd",'wallet_id':'0x0x'})
+        print(updated)
 
     except requests.HTTPError as http_err:
         print("HTTP error occurred:", http_err)
