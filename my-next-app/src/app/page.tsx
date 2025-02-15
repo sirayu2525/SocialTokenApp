@@ -1,27 +1,52 @@
-// /app/page.tsx
 "use client";
 
+import { getWalletBalance, getWalletId } from "@/services/api";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
 
 export default function Home() {
   const router = useRouter();
+  const session = useSession();
+  console.log(session);
+  const [discordName, setDiscordName] = useState("");
+  const [walletId, setWalletId] = useState<string>("");
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
+  useEffect(() => {
+    const fetchWalletData = async () => {
+      if (session.data?.user) {
+        const username = session.data.user.name ?? "";
+        setDiscordName(username);
+        try {
+          const id = await getWalletId(username);
+          setWalletId(id ?? "未取得");
+          const bal = id ? await getWalletBalance(id) : null;
+          setWalletBalance(bal);
+        } catch (error) {
+          console.error("ウォレット情報の取得に失敗しました", error);
+        }
+      }
+    };
+    fetchWalletData();
+  }, [session]);
+
+  
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-6">
-      <h1 className="text-4xl font-bold mb-6">
-        Next.js App
-      </h1>
-      <p className="text-lg text-gray-600 mb-8 text-center">
-        ようこそ！
-      </p>
-      <div className="space-x-4">
-        <button
-          onClick={() => router.push("/login")}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
-        >
-          ログインページへ
-        </button>
-      </div>
-    </main>
+    <div>
+      {session.data?.user ? (
+        <div>
+          <h1>Welcome, {discordName}</h1>
+          <p>ウォレットID: {walletId || "未取得"}</p>
+          <p>ウォレット残高: {walletBalance !== null ? `${walletBalance} トークン` : "取得中..."}</p>
+          <button onClick={() => signOut()}>ログアウト</button>
+        </div>
+      ) : (
+        <div>
+          <button onClick={() => signIn("/api/auth/signin")}>ログインしてください</button>
+        </div>
+      )}
+    </div>
   );
 }

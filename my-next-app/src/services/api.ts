@@ -6,9 +6,9 @@ if (!DB_API_URL || !BLOCKCHAIN_API_URL) {
   throw new Error("環境変数が設定されていません");
 }
 
-export async function getWalletId(discordId: string): Promise<string | null> {
+export async function getWalletId(discord_name: string): Promise<string | null> {
     const response = await fetch(
-      `${DB_API_URL}/data/search?table_name=data_records&column=discord_id&value=${discordId}`,
+      `${DB_API_URL}/data/search?table_name=data_records&column=discord_name&value=${discord_name}`,
       {
         headers: {
           "X-API-Key": "mysecretkey",

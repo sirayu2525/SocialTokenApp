@@ -2,7 +2,7 @@
 import NextAuth from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
 
-const handler = {
+export const authOptions = {
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,
@@ -10,17 +10,12 @@ const handler = {
     }),
   ],
   callbacks: {
-    async jwt({ token, account, profile }) {
-      if (account && profile) {
-        token.id = profile.id;
-        token.name = profile.username;
-      }
-      return token;
+     jwt: (params) => {
+      console.log(params);
+      return params.token;
     },
-  },
-  pages: {
-    signIn: "/login",
   },
 };
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
