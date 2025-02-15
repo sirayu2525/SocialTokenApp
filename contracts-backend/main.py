@@ -552,8 +552,11 @@ def mint_tokens_api(request: MintRequest, api_key: str = Header(None)):
 
     # ✅ 発行前のトークン残高を取得
     initial_balance_wei = contract.functions.balanceOf(request.wallet_id).call()
+    print(f"💰 現在のトークン残高: {web3.from_wei(initial_balance_wei, 'ether')} MOP")
+
 
     tx_hash = mint_tokens(request.wallet_id, amount_wei)
+    print(f"✅ トークン発行トランザクション: {tx_hash}")
 
     if not tx_hash:
         raise HTTPException(status_code=500, detail="Token minting failed. Transaction hash is None.")
