@@ -232,7 +232,7 @@ def get_data_by_field(table_name: str, column: str, value: Any, db: Session = De
     #     raise HTTPException(status_code=404, detail="Record not found")
     return record
 
-@app.put("/data/update_columns")
+@app.post("/data/update_columns")
 def update_columns(
     table_name: str,
     column: str,
