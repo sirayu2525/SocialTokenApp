@@ -1,5 +1,7 @@
 import requests
 import urllib3
+import json
+import urllib
 
 # 自己署名証明書の警告を無効化（開発環境のみ）
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -62,15 +64,7 @@ class DatabaseClient:
         )
         response.raise_for_status()
         return response.json()
-
-import requests
-import json
-
-class DBClient:
-    def __init__(self, base_url, headers):
-        self.base_url = base_url
-        self.headers = headers
-
+    
     def update_columns(self, table_name, column, search_value, updates):
         """
         指定した条件に合致する行の、複数のカラムを一括更新する。
@@ -81,11 +75,14 @@ class DBClient:
         :param updates: 更新するカラム名と新しい値の辞書（例: {"col1": "new_value1", "col2": "new_value2"}）
         :return: 更新後のデータ（辞書形式）
         """
+        # updatesをJSON形式の文字列に変換してURLエンコード
+        updates_json = json.dumps(updates)
+        encoded_updates = urllib.parse.quote(updates_json)
         params = {
             'table_name': table_name,
             'column': column,
             'search_value': search_value,
-            'updates': json.dumps(updates)  # updatesをJSON形式の文字列に変換
+            'updates': encoded_updates  # updatesをJSON形式の文字列に変換
         }
 
         # GETリクエストでクエリパラメータとして送信

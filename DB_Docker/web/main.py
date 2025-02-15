@@ -10,6 +10,8 @@ from database import SessionLocal, engine, Base
 
 from fastapi import Query
 
+import urllib
+
 import json
 
 from database import engine
@@ -252,7 +254,8 @@ def update_columns(
     /data/update_columns?table_name=your_table&column=col1&search_value=value1&updates={"col2": "new_value1", "col3": "new_value2"}
     """
     try:
-        updates_dict = json.loads(updates)  # JSON文字列を辞書に変換
+        updates_decoded = urllib.parse.unquote(updates)  # URLデコード
+        updates_dict = json.loads(updates_decoded)  # JSON文字列を辞書に変換
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON format for 'updates'")
 
