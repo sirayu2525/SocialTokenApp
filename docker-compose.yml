@@ -19,8 +19,7 @@ services:
     build: ./DB_server
     container_name: db_api
     ports:
-      # - "8000:80"  # ホストの8000番ポートをコンテナの80番ポートにマッピング
-      - "443:443"
+      - "8001:80"  # ← ホスト側は8001番にすることでFastAPIの8000番と競合回避
     depends_on:
       - db
     environment:
