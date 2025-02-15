@@ -462,6 +462,9 @@ contract_abi = [
 ]
 
 contract = web3.eth.contract(address=CONTRACT_ADDRESS, abi=contract_abi)
+
+
+
 def mint_tokens(wallet_id, amount):
     """ `mint()` を実行し、トークンを発行する """
     try:
