@@ -6,6 +6,8 @@ from tkinter import messagebox
 from flask import Flask, redirect, request
 from threading import Thread
 
+
+
 #https://zenn.dev/3w36zj6/articles/d3894e83cb7423
 
 
@@ -13,30 +15,95 @@ import nfc
 import binascii
 
 
-def on_connect(tag: nfc.tag.Tag) -> bool:
-    try:
-        print("connected")
-        tag_data = tag.dump()
-        print(tag_data)
-        #print(tag_data[3].split('|')[1])
-        #print(tag_data[7].split('|')[1])
-        print("\n".join(tag_data))
-        idm = binascii.hexlify(tag._nfcid)
-        print("IDm : " + str(idm.decode()))
-    except:
-        print('::ERROR::')
+class DatabaseClient:
+    def __init__(self, base_url, api_key):
+        """
+        :param base_url: APIサーバーのURL (例: "https://localhost")
+        :param api_key: アクセス用 API キー
+        """
+        self.base_url = base_url.rstrip('/')
+        self.headers = {"X-API-Key": api_key}
 
-    return True  # Trueを返しておくとタグが存在しなくなるまで待機され、離すとon_releaseが発火する
+    def create_tables(self, table_name=None):
+        params = {}
+        if table_name:
+            params['table_name'] = table_name
+        response = requests.post(
+            f"{self.base_url}/create_tables",
+            params=params,
+            headers=self.headers,
+            verify=False
+        )
+        response.raise_for_status()
+        return response.json()
 
+    def table_exists(self, table_name):
+        response = requests.get(
+            f"{self.base_url}/table_exists/{table_name}",
+            headers=self.headers,
+            verify=False
+        )
+        response.raise_for_status()
+        return response.json()
 
-def on_release(tag: nfc.tag.Tag) -> None:
-    print("released")
+    def add_data(self, table_name, data):
+        """
+        任意のカラムと値の組み合わせでレコードを挿入する
 
+        :param table_name: テーブル名
+        :param data: 挿入するデータ（例: {"col1": "value1", "col2": 123}）
+        """
+        response = requests.post(
+            f"{self.base_url}/data",
+            params={'table_name': table_name},
+            json=data,
+            headers=self.headers,
+            verify=False
+        )
+        response.raise_for_status()
+        return response.json()
 
-with nfc.ContactlessFrontend("usb") as clf:
-    while True:
-        clf.connect(rdwr={"on-connect": on_connect, "on-release": on_release})
+    def get_data_by_field(self, table_name, column, value):
+        params = {'table_name': table_name, 'column': column, 'value': value}
+        response = requests.get(
+            f"{self.base_url}/data/search",
+            params=params,
+            headers=self.headers,
+            verify=False
+        )
+        response.raise_for_status()
+        return response.json()
 
+    def update_columns(self, table_name, column, search_value, updates):
+        """
+        指定した条件に合致する行の、複数のカラムを一括更新する。
+
+        :param table_name: 更新するテーブル名
+        :param column: 検索対象のカラム名
+        :param search_value: 検索する値
+        :param updates: 更新するカラム名と新しい値の辞書（例: {"col1": "new_value1", "col2": "new_value2"}）
+        :return: 更新後のデータ（辞書形式）
+        """
+        params = {
+            'table_name': table_name,
+            'column': column,
+            'search_value': search_value
+        }
+        response = requests.put(
+            f"{self.base_url}/data/update_columns",
+            params=params,
+            json={"updates": updates},  # 辞書を JSON ボディで送信
+            headers=self.headers,
+            verify=False
+        )
+        response.raise_for_status()
+        return response.json()
+
+database_url = "https://localhost:50403"  # 必要に応じてホスト名/ポートを調整
+DB_api_key = "mysecretkey"
+
+DB_client = DatabaseClient(database_url, DB_api_key)
+table_name = "data_records"
 
 # DiscordのクライアントID, クライアントシークレット、リダイレクトURIを設定
 CLIENT_ID = '1338765321116450850'
@@ -78,6 +145,7 @@ def callback():
         # アクセストークンを使ってユーザー情報を取得
         user_response = requests.get(DISCORD_API_URL, headers={'Authorization': f'Bearer {access_token}'})
         user_info = user_response.json()
+        app.link_user(user_info["username"])
         return f'認証成功! ユーザー名: {user_info["username"]}'
     else:
         return 'トークン取得に失敗しました。'
@@ -92,21 +160,73 @@ class DiscordAuthApp:
         self.root = root
         self.root.title("Discord OAuth2 認証")
 
+        self.touch_flag = False
+        self.IDm = ''
+
         # 認証ボタン
-        self.auth_button = tk.Button(root, text="Discordで認証", command=self.start_auth)
+        self.auth_button = tk.Button(root, text="Discordと情報をリンク", command=self.start_auth)
         self.auth_button.pack(pady=20)
+
+        # 照会ボタン
+        self.inquiry_button = tk.Button(root, text="情報照会", command=self.start_inquiry)
+        self.inquiry_button.pack(pady=20)
 
         # 結果表示用ラベル
         self.result_label = tk.Label(root, text="", wraplength=300)
         self.result_label.pack(pady=20)
 
+    def start_inquiry(self):
+
+        found = DB_client.get_data_by_field(table_name, "discord_name", user_name)
+        if found == None:
+    
     def start_auth(self):
         # 認証URLを開く
         auth_url = get_auth_url()
         webbrowser.open(auth_url)
 
         # 結果をGUIに表示
-        self.result_label.config(text="ブラウザが開き、Discord認証画面が表示されます。認証後、結果が表示されます。")
+        self.result_label.config(text="認証用画面が開かれます。\n認証が完了したらブラウザの該当タブを閉じて問題ありません。")
+
+    def on_connect(self, tag: nfc.tag.Tag) -> bool:
+        try:
+            print("connected")
+            tag_data = tag.dump()
+            print(tag_data)
+            #print(tag_data[3].split('|')[1])
+            #print(tag_data[7].split('|')[1])
+            print("\n".join(tag_data))
+            idm = binascii.hexlify(tag._nfcid)
+            print("IDm : " + str(idm.decode()))
+            self.IDm = str(idm.decode())
+        except:
+            print('::ERROR::')
+
+        return True  # Trueを返しておくとタグが存在しなくなるまで待機され、離すとon_releaseが発火する
+
+    def on_release(self, tag: nfc.tag.Tag) -> None:
+        print("released")
+        self.touch_flag = False
+
+    def link_user(self,user_name):
+        found = DB_client.get_data_by_field(table_name, "discord_name", user_name)
+        if found == None:
+            return {'status':'error','code':'Account_Not_Found'}
+        else:
+            self.touch_flag = True
+            with nfc.ContactlessFrontend("usb") as clf:
+                while self.touch_flag:
+                    clf.connect(rdwr={"on-connect": self.on_connect, "on-release": self.on_release})
+            updated = DB_client.update_columns(table_name,
+                                          "discord_name", user_name, 
+                                          {"card_IDm": self.IDm})
+            self.result_label.config(text='【リンク完了】\nアカウント名：'+user_name)
+            return {'status':'success'}
+        
+
+
+
+
 
 # GUIを起動
 if __name__ == '__main__':
@@ -116,5 +236,7 @@ if __name__ == '__main__':
 
     # Tkinter GUIの作成
     root = tk.Tk()
+    root.title('Discord情報照会')
+    root.geometry("400x300")
     app = DiscordAuthApp(root)
     root.mainloop()

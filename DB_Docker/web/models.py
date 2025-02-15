@@ -11,6 +11,7 @@ class DataRecord(Base):
     balance = Column(Integer, default=0)  # 残高（日本円）
     wallet_id = Column(String(255), unique=True, nullable=False)  # ウォレットID（文字列）
     tx_hashes = Column(JSON, default=[])  # 取引履歴（リスト型）
+    card_IDm = Column(String(100), default='')
 
 '''class DataRecord(Base):
     __tablename__ = "data_records"

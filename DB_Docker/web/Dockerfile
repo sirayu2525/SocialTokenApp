@@ -20,5 +20,7 @@ RUN chmod +x entrypoint.sh
 # コンテナが公開するポートを指定（HTTP:80, HTTPS:443 両方公開可能）
 EXPOSE 80 443
 
+
+
 # エントリーポイントスクリプトで起動
-CMD ["./entrypoint.sh"]
+#CMD ["./entrypoint.sh"]

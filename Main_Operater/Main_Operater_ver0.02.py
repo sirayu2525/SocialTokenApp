@@ -111,7 +111,6 @@ database_url = "https://localhost:50403"  # 必要に応じてホスト名/ポ�
 DB_api_key = "mysecretkey"
 
 DB_client = DatabaseClient(database_url, DB_api_key)
-
 table_name = "data_records"
 
 
@@ -564,7 +563,7 @@ async def test_command(interaction: discord.Interaction,
     user_name = interaction.user.name  # アカウント名（ユーザーネーム）を取得
     found = DB_client.get_data_by_field(table_name, "discord_name", user_name)
     if found == None:
-        updated = DB_client.update_column(table_name,
+        updated = DB_client.update_columns(table_name,
                                           "discord_name", user_name, 
                                           {"github_username": github_username, "wallet_id": wallet_id})
         if updated == None:

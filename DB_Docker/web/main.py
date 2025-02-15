@@ -8,6 +8,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import insert, select, update, text
 from database import SessionLocal, engine, Base
 
+
+
+from database import engine
+from models import DataRecord
+
+# テーブルを作成（まだ作成していない場合）
+Base.metadata.create_all(bind=engine)
+
 # ----- 自己署名証明書の自動生成処理 -----
 #from cryptography import x509
 #from cryptography.x509.oid import NameOID
