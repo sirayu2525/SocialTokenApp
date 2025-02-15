@@ -180,3 +180,15 @@ GitHubリポジトリの「Settings」→「Secrets」→「New repository secre
 この構成で、GitHubへのプッシュをトリガーに自動でSakura VPSにFastAPIアプリがデプロイされ、Nginxがリバースプロキシとして機能します。
 
 どうして
+
+
+SocialTokenApp/
+├── docker-compose.yml         ← 統合用 Docker Compose
+├── nginx/
+│   └── nginx.conf             ← Nginx設定
+├── contracts-backend/
+│   ├── Dockerfile             ← FastAPI用 Dockerfile
+│   ├── main.py                ← FastAPIアプリケーション
+│   └── .env                   ← 環境変数ファイル
+└── db/
+    └── init.sql               ← データベース初期化スクリプト
