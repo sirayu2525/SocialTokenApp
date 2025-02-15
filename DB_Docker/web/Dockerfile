@@ -23,4 +23,4 @@ EXPOSE 80 443
 
 
 # エントリーポイントスクリプトで起動
-CMD ["./entrypoint.sh"]
+#CMD ["./entrypoint.sh"]
