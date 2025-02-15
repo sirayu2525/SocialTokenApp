@@ -21,7 +21,10 @@ import urllib
 from dotenv import load_dotenv
 
 # .envファイルを読み込む
-load_dotenv()
+if load_dotenv("/home/58_2/Main_Operater/.env"):
+    print('Success_Load_.env')
+else:
+    print('Failed_Load_.env')
 
 
 # 自己署名証明書の警告を無効化（開発環境のみ）
@@ -147,6 +150,7 @@ github_name TEXT UNIQUE
 
 # OpenAIのAPIキーを設定
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+openai.api_key = OPENAI_API_KEY
 
 def fetch_github_code(url):
     """

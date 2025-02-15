@@ -163,8 +163,8 @@ class DiscordAuthApp:
             return {'status':'error','code':'not register'}
         else:
             wallet_result = TAC.get_wallet_balance(found['wallet_id'])
-            token_amount = Web3.from_wei(wallet_result['wallet_balance'], "ether")
-            self.result_label.config(text='【ユーザー名】\n'+found['discord_name']+'\n【トークン量】'+str(token_amount))
+            #token_amount = Web3.from_wei(wallet_result['wallet_balance'], "ether")
+            self.result_label.config(text='【ユーザー名】\n'+found['discord_name']+'\n【トークン量】'+str(wallet_result['wallet_balance']))
             return {'status':'success'}
     
     def start_auth(self):
