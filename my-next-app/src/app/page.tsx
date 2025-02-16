@@ -42,17 +42,28 @@ export default function Home() {
 
   
   return (
-    <div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
       {session.data?.user ? (
-        <div>
-          <h1>Welcome, {discordName}</h1>
-          <p>ウォレットID: {walletId || "未取得"}</p>
-          <p>ウォレット残高: {walletBalance !== null ? `${walletBalance} トークン` : "取得中..."}</p>
-          <button onClick={() => signOut()}>ログアウト</button>
+        <div className="bg-gray-800 p-6 rounded-2xl shadow-lg">
+          <h1 className="text-2xl font-bold mb-4">Welcome, {discordName}</h1>
+          <p className="text-lg mb-2">ウォレットID: {walletId || "未取得"}</p>
+          <p className="text-lg mb-4">ウォレット残高: {walletBalance !== null ? `${walletBalance} トークン` : "取得中..."}</p>
+          <button 
+            onClick={() => signOut()}
+            className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-xl transition-all"
+          >
+            ログアウト
+          </button>
         </div>
       ) : (
-        <div>
-          <button onClick={() => signIn("/api/auth/signin")}>ログインしてください</button>
+        <div className="bg-gray-800 p-6 rounded-2xl shadow-lg">
+          <p className="text-lg mb-4">ログインしてください</p>
+          <button 
+            onClick={() => signIn("/api/auth/signin")}
+            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-xl transition-all"
+          >
+            ログイン
+          </button>
         </div>
       )}
     </div>
