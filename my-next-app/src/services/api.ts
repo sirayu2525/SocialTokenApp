@@ -13,6 +13,7 @@ export async function getWalletId(discord_name: string): Promise<string | null> 
         headers: {
           "X-API-Key": "mysecretkey",
         },
+        mode: "cors",
       }
     );
     if (!response.ok) {
