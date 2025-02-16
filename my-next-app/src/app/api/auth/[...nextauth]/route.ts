@@ -14,8 +14,12 @@ export const authOptions = {
       console.log(params);
       return params.token;
     },
+    // session: async ({ session, token }) => {
+    //   session.user.name = token.name;
+    //   return session;
+    // },
   },
-};
+  };
 
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

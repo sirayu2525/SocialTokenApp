@@ -10,14 +10,16 @@ export default function Home() {
   const router = useRouter();
   const session = useSession();
   console.log(session);
+  console.log(session.data);
+  console.log(session.data?.user);
   const [discordName, setDiscordName] = useState("");
   const [walletId, setWalletId] = useState<string>("");
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchWalletData = async () => {
-      if (session.data?.user) {
-        const username = session.data.user.name ?? "";
+      if (session.data?.user?.name) {
+        const username = session.data.user.name;
         console.log(username);
         setDiscordName(username);
         try {
@@ -36,7 +38,7 @@ export default function Home() {
       }
     };
     fetchWalletData();
-  }, []);
+  }, [session.data?.user]);
 
   
   return (
