@@ -16,6 +16,7 @@ import json
 
 from database import engine
 from models import DataRecord
+from fastapi.middleware.cors import CORSMiddleware
 
 # テーブルを作成（まだ作成していない場合）
 Base.metadata.create_all(bind=engine)
@@ -85,6 +86,15 @@ class APIKeyRoute(APIRoute):
 app = FastAPI(
     title="FastAPI DB Operations API Server",
     route_class=APIKeyRoute
+)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ----- DB セッション取得用依存関数 -----

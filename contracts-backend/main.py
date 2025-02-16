@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 import time
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
@@ -518,6 +519,15 @@ def wait_for_mint(tx_hash, timeout=100):
 
 # ✅ FastAPI のエンドポイント
 app = FastAPI()
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/wallet_balance/{wallet_id}")
 def wallet_balance(wallet_id: str):
