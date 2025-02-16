@@ -7,6 +7,8 @@ import binascii
 import threading
 from threading import Thread
 
+import pygame.freetype  # 追加
+
 import pygame
 from flask import Flask, request
 import nfc
@@ -179,9 +181,9 @@ class Button:
         pygame.draw.rect(surface, (30, 30, 30), self.rect, width=2, border_radius=8)
         
         # テキストの描画
-        text_surface = self.font.render(self.text, True, self.text_color)
-        text_rect = text_surface.get_rect(center=self.rect.center)
-        surface.blit(text_surface, text_rect)
+        text_rect = self.font.get_rect(self.text)
+        text_rect.center = self.rect.center
+        self.font.render_to(surface, text_rect.topleft, self.text, self.text_color)
 
     def is_clicked(self, pos):
         return self.rect.collidepoint(pos)
@@ -193,8 +195,14 @@ class PygameAuthApp:
     def __init__(self, screen):
         self.screen = screen
         self.width, self.height = screen.get_size()
-        self.font = pygame.font.SysFont("meiryo", 24)
-        self.result_font = pygame.font.SysFont("meiryo", 24)
+        #self.font = pygame.font.SysFont("meiryo", 24)
+        #self.result_font = pygame.font.SysFont("meiryo", 24)
+        #self.font = pygame.freetype.SysFont("meiryo", 24)
+        #self.result_font = pygame.freetype.SysFont("meiryo", 24)
+        self.font = pygame.freetype.SysFont("meiryo", 24)
+        self.result_font = pygame.freetype.SysFont("meiryo", 24, bold = True)
+        #self.font.bold = True
+        #self.result_font.bold = True
         self.result_message = ""
         self.touch_flag = False
         self.IDm = ""
@@ -289,6 +297,14 @@ class PygameAuthApp:
             b = int(color_top[2] * (1 - ratio) + color_bottom[2] * ratio)
             pygame.draw.line(surface, (r, g, b), (0, y), (width, y))
 
+    def render_glow_text(self, text, font, pos, text_color, glow_color, glow_radius):
+        # グロー効果の描画
+        for dx in range(-glow_radius, glow_radius+1):
+            for dy in range(-glow_radius, glow_radius+1):
+                font.render_to(self.screen, (pos[0]+dx, pos[1]+dy), text, glow_color)
+        # 通常テキストの描画
+        font.render_to(self.screen, pos, text, text_color)
+
     def draw(self):
         # 画面クリア
         self.screen.fill((100, 175, 35))
@@ -303,22 +319,17 @@ class PygameAuthApp:
         
         # 結果メッセージを改行ごとに分割
         lines = self.result_message.split('\n')
-
-        # 各行のテキストサーフェスを作成し、高さと幅を取得
-        text_surfaces = [self.result_font.render(line, True, (0, 0, 0)) for line in lines]
-
-        # 各行の高さと行間のスペース（例：10px）を考慮して全体の高さを計算
         line_spacing = 10
-        total_text_height = sum(surface.get_height() for surface in text_surfaces) + line_spacing * (len(text_surfaces) - 1)
+        y = 250
+        line_spacing = 10
+        y = 250
+        for line in lines:
+            text_rect = self.result_font.get_rect(line)
+            x = (self.width - text_rect.width) // 2
+            pos = (x, y)
+            self.result_font.render_to(self.screen, pos, line, (0, 0, 0))
+            y += text_rect.height + line_spacing
 
-        # テキストブロックの開始Y座標（画面の垂直中心に配置）
-        start_y = 250#(self.height - total_text_height) // 2
-
-        # 各行を画面の水平中心に配置して描画
-        for surface in text_surfaces:
-            x = (self.width - surface.get_width()) // 2
-            self.screen.blit(surface, (x, start_y))
-            start_y += surface.get_height() + line_spacing
 
 # --------------------
 # pygame 初期化＆メインループ
