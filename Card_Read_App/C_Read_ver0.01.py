@@ -143,14 +143,14 @@ class DiscordAuthApp:
 
         # 認証ボタン
         self.auth_button = tk.Button(root, text="Discordと情報をリンク", command=self.start_auth)
-        self.auth_button.pack(pady=20)
+        self.auth_button.pack(pady=10)
 
         # 照会ボタン
         self.inquiry_button = tk.Button(root, text="情報照会", command=self.start_inquiry)
-        self.inquiry_button.pack(pady=20)
+        self.inquiry_button.pack(pady=10)
 
         # 結果表示用ラベル
-        self.result_label = tk.Label(root, text="", wraplength=300)
+        self.result_label = tk.Label(root, text="", wraplength=300, font=("Arial", 18))
         self.result_label.pack(pady=20)
 
     def start_inquiry(self):
@@ -164,7 +164,7 @@ class DiscordAuthApp:
         else:
             wallet_result = TAC.get_wallet_balance(found['wallet_id'])
             #token_amount = Web3.from_wei(wallet_result['wallet_balance'], "ether")
-            self.result_label.config(text='【ユーザー名】\n'+found['discord_name']+'\n【トークン量】'+str(wallet_result['wallet_balance']))
+            self.result_label.config(text='【ユーザー名】\n'+found['discord_name']+'\n【トークン量】\n'+str(wallet_result['wallet_balance'])+' MOP')
             return {'status':'success'}
     
     def start_auth(self):
