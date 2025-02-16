@@ -18,19 +18,25 @@ export default function Home() {
     const fetchWalletData = async () => {
       if (session.data?.user) {
         const username = session.data.user.name ?? "";
+        console.log(username);
         setDiscordName(username);
         try {
           const id = await getWalletId(username);
+          console.log(id);
           setWalletId(id ?? "未取得");
           const bal = id ? await getWalletBalance(id) : null;
+          console.log(bal);
           setWalletBalance(bal);
         } catch (error) {
           console.error("ウォレット情報の取得に失敗しました", error);
         }
       }
+      else{
+        console.log("session.data?.user is null");
+      }
     };
     fetchWalletData();
-  }, [session]);
+  }, []);
 
   
   return (
